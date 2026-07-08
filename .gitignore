@@ -28,3 +28,4 @@ fig
 *.tar.zst
 output
 .tmp
+*.key
