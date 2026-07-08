@@ -7,7 +7,7 @@ from typing import Optional
 def parse_datetime(val: str) -> datetime:
     val = val.replace("Z", "+00:00")
     # Normalize microseconds to 6 digits
-    match = re.match(r"(.+\.\d+)(\+.+)", val)
+    match = re.match(r"(.+\.\d+)([+-].+)", val)
     if match:
         base, tz = match.groups()
         parts = base.split(".")

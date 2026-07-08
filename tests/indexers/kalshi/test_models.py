@@ -8,7 +8,7 @@ tests cover the range of fractional-second precisions Kalshi's API can send.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -44,6 +44,19 @@ class TestParseDatetime:
         result = parse_datetime("2024-01-15T12:30:45Z")
         assert result.tzinfo is not None
         assert result.utcoffset().total_seconds() == 0
+
+    def test_single_digit_fraction_with_negative_offset_is_padded(self):
+        # Regression test: the fractional-second normalization regex used to only
+        # match a "+" timezone offset, so negative offsets skipped padding/truncation
+        # entirely and were handed to fromisoformat with a non-3/6-digit fraction.
+        assert parse_datetime("2024-01-15T12:30:45.1-05:00") == datetime(
+            2024, 1, 15, 12, 30, 45, 100000, tzinfo=timezone(-timedelta(hours=5))
+        )
+
+    def test_sub_microsecond_fraction_with_negative_offset_is_truncated(self):
+        assert parse_datetime("2024-01-15T12:30:45.123456789-05:00") == datetime(
+            2024, 1, 15, 12, 30, 45, 123456, tzinfo=timezone(-timedelta(hours=5))
+        )
 
 
 class TestTradeFromDict:
