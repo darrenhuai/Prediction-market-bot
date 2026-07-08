@@ -85,8 +85,10 @@ class KalshiClient:
 
     def get_markets(self, status="open", limit=100, cursor=None, series_ticker=None):
         params = {"status": status, "limit": limit}
-        if cursor: params["cursor"] = cursor
-        if series_ticker: params["series_ticker"] = series_ticker
+        if cursor:
+            params["cursor"] = cursor
+        if series_ticker:
+            params["series_ticker"] = series_ticker
         return self._get("/markets", params=params)
 
     def get_all_markets(self, status="open", series_ticker=None):
@@ -96,7 +98,8 @@ class KalshiClient:
             markets = resp.get("markets") or []
             results.extend(markets)
             cursor = resp.get("cursor")
-            if not cursor or not markets: break
+            if not cursor or not markets:
+                break
         return results
 
     def get_market(self, ticker):
@@ -107,8 +110,10 @@ class KalshiClient:
 
     def get_trades(self, ticker=None, limit=100, cursor=None):
         params = {"limit": limit}
-        if ticker: params["ticker"] = ticker
-        if cursor: params["cursor"] = cursor
+        if ticker:
+            params["ticker"] = ticker
+        if cursor:
+            params["cursor"] = cursor
         return self._get("/markets/trades", params=params)
 
     def get_balance(self):
@@ -116,7 +121,8 @@ class KalshiClient:
 
     def get_positions(self, limit=100, cursor=None):
         params = {"limit": limit}
-        if cursor: params["cursor"] = cursor
+        if cursor:
+            params["cursor"] = cursor
         return self._get("/portfolio/positions", params=params, auth=True)
 
     def get_all_positions(self):
@@ -126,17 +132,28 @@ class KalshiClient:
             positions = resp.get("market_positions") or []
             results.extend(positions)
             cursor = resp.get("cursor")
-            if not cursor or not positions: break
+            if not cursor or not positions:
+                break
         return results
 
     def get_fills(self, ticker=None, limit=100):
         params = {"limit": limit}
-        if ticker: params["ticker"] = ticker
+        if ticker:
+            params["ticker"] = ticker
         return self._get("/portfolio/fills", params=params, auth=True)
 
     def create_order(self, ticker, side, action, order_type, count, yes_price=None, no_price=None):
         import uuid
-        body = {"ticker": ticker, "side": side, "action": action, "type": order_type, "count": count, "client_order_id": str(uuid.uuid4())}
-        if yes_price is not None: body["yes_price"] = yes_price
-        if no_price is not None: body["no_price"] = no_price
+        body = {
+            "ticker": ticker,
+            "side": side,
+            "action": action,
+            "type": order_type,
+            "count": count,
+            "client_order_id": str(uuid.uuid4()),
+        }
+        if yes_price is not None:
+            body["yes_price"] = yes_price
+        if no_price is not None:
+            body["no_price"] = no_price
         return self._post("/portfolio/orders", body)
