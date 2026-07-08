@@ -4,6 +4,7 @@ import base64
 import logging
 import os
 import time
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
@@ -15,20 +16,32 @@ logger = logging.getLogger(__name__)
 BASE_URL = os.getenv("KALSHI_BASE_URL", "https://trading-api.kalshi.com/trade-api/v2")
 
 class KalshiClient:
-    def __init__(self):
+    """Thin wrapper around the Kalshi trade API.
+
+    Supports two auth modes:
+      - RSA key-pair auth (KALSHI_API_KEY_ID + KALSHI_PRIVATE_KEY_PATH), used
+        when both are configured and the key loads successfully.
+      - Email/password auth (KALSHI_EMAIL + KALSHI_PASSWORD), used as a
+        fallback for endpoints that require auth.
+
+    All four env vars are optional at construction time; unauthenticated
+    endpoints (e.g. get_markets) work without any credentials.
+    """
+
+    def __init__(self) -> None:
         self.base = BASE_URL
-        self._token = None
+        self._token: str | None = None
         self._token_expiry = 0.0
         self._email = os.getenv("KALSHI_EMAIL")
         self._password = os.getenv("KALSHI_PASSWORD")
         self._api_key_id = os.getenv("KALSHI_API_KEY_ID")
         self._private_key_path = os.getenv("KALSHI_PRIVATE_KEY_PATH")
-        self._private_key = None
+        self._private_key: Any = None
         self._session = httpx.Client(base_url=self.base, timeout=15)
         if self._private_key_path:
             self._load_key()
 
-    def _load_key(self):
+    def _load_key(self) -> None:
         try:
             from cryptography.hazmat.primitives import serialization
             with open(self._private_key_path, "rb") as f:
@@ -50,7 +63,7 @@ class KalshiClient:
                 "RSA auth headers cannot be built without it."
             )
 
-    def _rsa_auth_headers(self, method, path):
+    def _rsa_auth_headers(self, method: str, path: str) -> dict[str, str]:
         import datetime
 
         from cryptography.hazmat.primitives import hashes
@@ -67,13 +80,13 @@ class KalshiClient:
             "Content-Type": "application/json",
         }
 
-    def _login(self):
+    def _login(self) -> None:
         resp = self._session.post("/login", json={"email": self._email, "password": self._password})
         resp.raise_for_status()
         self._token = resp.json().get("token")
         self._token_expiry = time.time() + 25 * 60
 
-    def _get(self, path, params=None, auth=False):
+    def _get(self, path: str, params: dict[str, Any] | None = None, auth: bool = False) -> dict[str, Any]:
         if self._private_key and self._api_key_id:
             headers = self._rsa_auth_headers("GET", "/trade-api/v2" + path)
         elif auth:
@@ -86,7 +99,7 @@ class KalshiClient:
         resp.raise_for_status()
         return resp.json()
 
-    def _post(self, path, body):
+    def _post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
         if self._private_key and self._api_key_id:
             headers = self._rsa_auth_headers("POST", "/trade-api/v2" + path)
         else:
@@ -97,10 +110,17 @@ class KalshiClient:
         resp.raise_for_status()
         return resp.json()
 
-    def get_exchange_status(self):
+    def get_exchange_status(self) -> dict[str, Any]:
+        """Return the current Kalshi exchange status (open/closed)."""
         return self._get("/exchange/status")
 
-    def get_markets(self, status="open", limit=100, cursor=None, series_ticker=None):
+    def get_markets(
+        self,
+        status: str = "open",
+        limit: int = 100,
+        cursor: str | None = None,
+        series_ticker: str | None = None,
+    ) -> dict[str, Any]:
         params = {"status": status, "limit": limit}
         if cursor:
             params["cursor"] = cursor
@@ -108,7 +128,8 @@ class KalshiClient:
             params["series_ticker"] = series_ticker
         return self._get("/markets", params=params)
 
-    def get_all_markets(self, status="open", series_ticker=None):
+    def get_all_markets(self, status: str = "open", series_ticker: str | None = None) -> list[dict[str, Any]]:
+        """Page through get_markets() and return every market as a flat list."""
         results, cursor = [], None
         while True:
             resp = self.get_markets(status=status, cursor=cursor, limit=1000, series_ticker=series_ticker)
@@ -119,13 +140,13 @@ class KalshiClient:
                 break
         return results
 
-    def get_market(self, ticker):
+    def get_market(self, ticker: str) -> dict[str, Any]:
         return self._get(f"/markets/{ticker}")
 
-    def get_orderbook(self, ticker, depth=10):
+    def get_orderbook(self, ticker: str, depth: int = 10) -> dict[str, Any]:
         return self._get(f"/markets/{ticker}/orderbook", params={"depth": depth})
 
-    def get_trades(self, ticker=None, limit=100, cursor=None):
+    def get_trades(self, ticker: str | None = None, limit: int = 100, cursor: str | None = None) -> dict[str, Any]:
         params = {"limit": limit}
         if ticker:
             params["ticker"] = ticker
@@ -133,16 +154,17 @@ class KalshiClient:
             params["cursor"] = cursor
         return self._get("/markets/trades", params=params)
 
-    def get_balance(self):
+    def get_balance(self) -> dict[str, Any]:
         return self._get("/portfolio/balance", auth=True)
 
-    def get_positions(self, limit=100, cursor=None):
+    def get_positions(self, limit: int = 100, cursor: str | None = None) -> dict[str, Any]:
         params = {"limit": limit}
         if cursor:
             params["cursor"] = cursor
         return self._get("/portfolio/positions", params=params, auth=True)
 
-    def get_all_positions(self):
+    def get_all_positions(self) -> list[dict[str, Any]]:
+        """Page through get_positions() and return every position as a flat list."""
         results, cursor = [], None
         while True:
             resp = self.get_positions(cursor=cursor)
@@ -153,15 +175,25 @@ class KalshiClient:
                 break
         return results
 
-    def get_fills(self, ticker=None, limit=100):
+    def get_fills(self, ticker: str | None = None, limit: int = 100) -> dict[str, Any]:
         params = {"limit": limit}
         if ticker:
             params["ticker"] = ticker
         return self._get("/portfolio/fills", params=params, auth=True)
 
-    def create_order(self, ticker, side, action, order_type, count, yes_price=None, no_price=None):
+    def create_order(
+        self,
+        ticker: str,
+        side: str,
+        action: str,
+        order_type: str,
+        count: int,
+        yes_price: int | None = None,
+        no_price: int | None = None,
+    ) -> dict[str, Any]:
+        """Submit an order. Exactly one of yes_price/no_price should be set for limit orders."""
         import uuid
-        body = {
+        body: dict[str, Any] = {
             "ticker": ticker,
             "side": side,
             "action": action,
