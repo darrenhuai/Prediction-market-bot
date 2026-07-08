@@ -1,8 +1,16 @@
-import argparse, json, logging, os, smtplib, sys, time
+import argparse
+import json
+import logging
+import os
+import smtplib
+import sys
+import time
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 DEFAULT_INTERVAL = int(os.getenv("BOT_INTERVAL_SECONDS", "300"))
@@ -75,7 +83,7 @@ def refresh_markets(client):
 
 def scan_ev(state):
     from src.common.db import get_conn
-    from src.common.util import ev_yes, ev_no, remove_vig, kelly_fraction
+    from src.common.util import ev_no, ev_yes, kelly_fraction, remove_vig
     conn = get_conn()
     rows = conn.execute(
         "SELECT ticker,title,yes_bid,yes_ask,no_bid,no_ask,volume,open_interest,close_time,event_ticker FROM markets WHERE status='open' AND yes_bid>0 AND no_bid>0 AND volume>=? ORDER BY volume DESC",

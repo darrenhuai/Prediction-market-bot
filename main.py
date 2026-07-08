@@ -1,8 +1,11 @@
 ﻿from __future__ import annotations
+
 import sys
 from pathlib import Path
+
 from src.common.analysis import Analysis
 from src.common.indexer import Indexer
+
 
 def _title(s):
     return s.replace('_', ' ').title()

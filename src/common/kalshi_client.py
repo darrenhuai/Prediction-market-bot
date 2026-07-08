@@ -1,7 +1,12 @@
 ﻿from __future__ import annotations
-import os, time, base64, hashlib
+
+import base64
+import os
+import time
+
 import httpx
 from dotenv import load_dotenv
+
 load_dotenv()
 
 BASE_URL = os.getenv("KALSHI_BASE_URL", "https://trading-api.kalshi.com/trade-api/v2")
@@ -30,6 +35,7 @@ class KalshiClient:
 
     def _rsa_auth_headers(self, method, path):
         import datetime
+
         from cryptography.hazmat.primitives import hashes
         from cryptography.hazmat.primitives.asymmetric import padding
         ts = str(int(datetime.datetime.now().timestamp() * 1000))

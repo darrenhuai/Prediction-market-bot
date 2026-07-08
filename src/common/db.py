@@ -1,6 +1,8 @@
 ﻿from __future__ import annotations
+
 import json
 from pathlib import Path
+
 import duckdb
 
 DB_PATH = Path("data/kalshi.duckdb")
