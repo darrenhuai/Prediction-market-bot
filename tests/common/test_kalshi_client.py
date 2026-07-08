@@ -12,14 +12,20 @@ import pytest
 from src.common.kalshi_client import KalshiClient
 
 
-@pytest.fixture
-def client(monkeypatch):
-    """A KalshiClient with no credentials configured, network disabled."""
+@pytest.fixture(autouse=True)
+def _no_real_credentials(monkeypatch):
+    """Isolate every test in this module from real Kalshi credentials.
+
+    KalshiClient() reads KALSHI_* env vars at construction time, so a
+    contributor with real credentials configured in their local .env would
+    otherwise get different (and failing) results than CI, e.g. mock_client()
+    picking the RSA auth path instead of the unauthenticated/email-password
+    path a given test expects.
+    """
     monkeypatch.delenv("KALSHI_EMAIL", raising=False)
     monkeypatch.delenv("KALSHI_PASSWORD", raising=False)
     monkeypatch.delenv("KALSHI_API_KEY_ID", raising=False)
     monkeypatch.delenv("KALSHI_PRIVATE_KEY_PATH", raising=False)
-    return KalshiClient()
 
 
 def mock_client(handler) -> KalshiClient:
