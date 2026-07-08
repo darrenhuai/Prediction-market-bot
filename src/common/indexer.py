@@ -15,10 +15,10 @@ Usage:
 
 from __future__ import annotations
 
-import importlib
-import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+from src.common.discovery import discover_subclasses
 
 
 class Indexer(ABC):
@@ -46,26 +46,4 @@ class Indexer(ABC):
         Returns:
             List of Indexer subclass types found.
         """
-        indexer_dir = Path(indexer_dir)
-        if not indexer_dir.exists():
-            return []
-
-        indexers: list[type[Indexer]] = []
-
-        for py_file in indexer_dir.glob("**/*.py"):
-            if py_file.name.startswith("_"):
-                continue
-
-            relative_path = py_file.relative_to(indexer_dir)
-            module_parts = relative_path.with_suffix("").parts
-            module_name = "src.indexers." + ".".join(module_parts)
-            try:
-                module = importlib.import_module(module_name)
-            except ImportError:
-                continue
-
-            for _, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, cls) and obj is not cls and not inspect.isabstract(obj):
-                    indexers.append(obj)
-
-        return indexers
+        return discover_subclasses(indexer_dir, cls, module_prefix="src.indexers")

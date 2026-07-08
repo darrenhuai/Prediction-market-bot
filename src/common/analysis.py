@@ -23,8 +23,6 @@ Usage:
 
 from __future__ import annotations
 
-import importlib
-import inspect
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Generator
@@ -38,6 +36,8 @@ import pandas as pd
 from matplotlib.animation import FuncAnimation
 from matplotlib.figure import Figure
 from tqdm import tqdm
+
+from src.common.discovery import discover_subclasses
 
 if TYPE_CHECKING:
     from src.common.interfaces.chart import ChartConfig
@@ -161,26 +161,4 @@ class Analysis(ABC):
         Returns:
             List of Analysis subclass types found.
         """
-        analysis_dir = Path(analysis_dir)
-        if not analysis_dir.exists():
-            return []
-
-        analyses: list[type[Analysis]] = []
-
-        for py_file in analysis_dir.glob("**/*.py"):
-            if py_file.name.startswith("_"):
-                continue
-
-            relative_path = py_file.relative_to(analysis_dir)
-            module_parts = relative_path.with_suffix("").parts
-            module_name = "src.analysis." + ".".join(module_parts)
-            try:
-                module = importlib.import_module(module_name)
-            except ImportError:
-                continue
-
-            for _, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, cls) and obj is not cls and not inspect.isabstract(obj):
-                    analyses.append(obj)
-
-        return analyses
+        return discover_subclasses(analysis_dir, cls, module_prefix="src.analysis")
