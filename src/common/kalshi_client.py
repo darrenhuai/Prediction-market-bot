@@ -1,6 +1,7 @@
 ﻿from __future__ import annotations
 
 import base64
+import logging
 import os
 import time
 
@@ -8,6 +9,8 @@ import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = os.getenv("KALSHI_BASE_URL", "https://trading-api.kalshi.com/trade-api/v2")
 
@@ -30,8 +33,22 @@ class KalshiClient:
             from cryptography.hazmat.primitives import serialization
             with open(self._private_key_path, "rb") as f:
                 self._private_key = serialization.load_pem_private_key(f.read(), password=None)
-        except Exception as e:
-            print(f"Warning: could not load private key: {e}")
+        except OSError as e:
+            logger.warning("Could not read private key file %s: %s", self._private_key_path, e)
+        except ValueError as e:
+            # Raised by cryptography for malformed/unsupported key data.
+            logger.warning("Could not parse private key %s: %s", self._private_key_path, e)
+
+        if self._private_key_path and self._private_key is None:
+            logger.warning(
+                "KALSHI_PRIVATE_KEY_PATH is set but no key was loaded; "
+                "falling back to email/password login if credentials are available."
+            )
+        if self._private_key and not self._api_key_id:
+            logger.warning(
+                "Private key loaded but KALSHI_API_KEY_ID is not set; "
+                "RSA auth headers cannot be built without it."
+            )
 
     def _rsa_auth_headers(self, method, path):
         import datetime
