@@ -74,6 +74,11 @@ class TestRemoveVig:
         assert fair_yes == pytest.approx(70 / 110)
         assert fair_no == pytest.approx(40 / 110)
 
+    def test_zero_prices_does_not_raise(self):
+        # A market with no bids on either side (yes_price == no_price == 0)
+        # would otherwise hit a ZeroDivisionError; fall back to a neutral split.
+        assert remove_vig(0, 0) == (0.5, 0.5)
+
 
 class TestKellyFraction:
     def test_zero_edge_gives_zero_stake(self):

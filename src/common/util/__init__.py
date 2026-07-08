@@ -1,7 +1,9 @@
-﻿def remove_vig(yes_price, no_price):
+def remove_vig(yes_price, no_price):
     raw_yes = yes_price / 100.0
     raw_no = no_price / 100.0
     total = raw_yes + raw_no
+    if total == 0:
+        return 0.5, 0.5
     return raw_yes / total, raw_no / total
 
 
