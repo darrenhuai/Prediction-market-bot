@@ -1,7 +1,8 @@
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
+
+from src.common.util.datetime import parse_iso_datetime
 
 
 @dataclass
@@ -27,16 +28,7 @@ class Market:
             if not val:
                 return None
             try:
-                # Handle ISO format with Z suffix
-                val = val.replace("Z", "+00:00")
-                # fromisoformat on Python <3.11 only accepts 0, 3, or 6 fractional
-                # digits, so pad/truncate any other precision to 6 before parsing.
-                match = re.match(r"(.+\.\d+)([+-].+)", val)
-                if match:
-                    base, tz = match.groups()
-                    date_part, frac = base.split(".")
-                    val = f"{date_part}.{frac.ljust(6, '0')[:6]}{tz}"
-                return datetime.fromisoformat(val)
+                return parse_iso_datetime(val)
             except (ValueError, TypeError):
                 return None
 

@@ -1,20 +1,8 @@
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-
-def parse_datetime(val: str) -> datetime:
-    val = val.replace("Z", "+00:00")
-    # Normalize microseconds to 6 digits
-    match = re.match(r"(.+\.\d+)([+-].+)", val)
-    if match:
-        base, tz = match.groups()
-        parts = base.split(".")
-        if len(parts) == 2:
-            micros = parts[1].ljust(6, "0")[:6]
-            val = f"{parts[0]}.{micros}{tz}"
-    return datetime.fromisoformat(val)
+from src.common.util.datetime import parse_iso_datetime as parse_datetime
 
 
 @dataclass
