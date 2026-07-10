@@ -32,6 +32,8 @@ def ev_no(fair_prob_no, no_price_cents):
 
 def kelly_fraction(prob, payout_multiple, fraction=0.25):
     b = payout_multiple
+    if b == 0:
+        return 0.0
     q = 1 - prob
     kelly = (b * prob - q) / b
     return max(0.0, kelly * fraction)

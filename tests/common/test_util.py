@@ -109,6 +109,12 @@ class TestKellyFraction:
                 assert not math.isnan(result)
                 assert result >= 0.0
 
+    def test_zero_payout_multiple_does_not_raise(self):
+        # payout_multiple is 0 when a contract's ask price is 100 cents
+        # (bot.py: payout_mult = (100 - price) / price); would otherwise
+        # hit a ZeroDivisionError since kelly = (b*prob - q) / b.
+        assert kelly_fraction(0.5, payout_multiple=0) == 0.0
+
 
 class TestFmtHelpers:
     def test_fmt_pct_default_decimals(self):
