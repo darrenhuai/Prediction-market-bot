@@ -52,6 +52,19 @@ class TestParseIsoDatetime:
             2024, 1, 15, 12, 30, 45, tzinfo=timezone(-timedelta(hours=5))
         )
 
+    def test_naive_single_digit_fraction_is_padded(self):
+        # No timezone offset at all: the regex used to require a "+"/"-" suffix
+        # to trigger padding, so a naive timestamp with non-3/6-digit fractional
+        # seconds fell through unpadded and would raise on Python <3.11.
+        assert parse_iso_datetime("2024-01-15T12:30:45.1") == datetime(
+            2024, 1, 15, 12, 30, 45, 100000
+        )
+
+    def test_naive_sub_microsecond_fraction_is_truncated(self):
+        assert parse_iso_datetime("2024-01-15T12:30:45.123456789") == datetime(
+            2024, 1, 15, 12, 30, 45, 123456
+        )
+
     def test_invalid_string_raises(self):
         with pytest.raises(ValueError):
             parse_iso_datetime("not-a-date")

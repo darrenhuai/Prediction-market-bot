@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-_FRACTIONAL_TZ_RE = re.compile(r"(.+\.\d+)([+-].+)")
+_FRACTIONAL_RE = re.compile(r"(.+\.\d+)([+-].+)?$")
 
 
 def parse_iso_datetime(val: str) -> datetime:
@@ -12,12 +12,13 @@ def parse_iso_datetime(val: str) -> datetime:
     digit, Polymarket sometimes sends nanosecond precision) are padded or
     truncated to exactly 6 digits before parsing. A trailing "Z" suffix is
     normalized to an explicit "+00:00" offset so the regex below also handles
-    Zulu timestamps.
+    Zulu timestamps. The timezone offset is optional so naive timestamps (no
+    offset at all) still get their fractional seconds normalized.
     """
     val = val.replace("Z", "+00:00")
-    match = _FRACTIONAL_TZ_RE.match(val)
+    match = _FRACTIONAL_RE.match(val)
     if match:
         base, tz = match.groups()
         date_part, frac = base.split(".")
-        val = f"{date_part}.{frac.ljust(6, '0')[:6]}{tz}"
+        val = f"{date_part}.{frac.ljust(6, '0')[:6]}{tz or ''}"
     return datetime.fromisoformat(val)
