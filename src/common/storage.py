@@ -64,14 +64,10 @@ class ParquetStorage:
         combined = pd.concat([last_df, new_df], ignore_index=True)
 
         start = int(last_chunk.stem.split("_")[1])
-        if len(combined) <= self.CHUNK_SIZE:
-            combined.to_parquet(last_chunk)
-        else:
-            first_part = combined.iloc[: self.CHUNK_SIZE]
-            first_part.to_parquet(last_chunk)
-            remaining = combined.iloc[self.CHUNK_SIZE :]
-            new_start = start + self.CHUNK_SIZE
-            new_chunk_path = self._chunk_path(new_start, new_start + self.CHUNK_SIZE)
-            remaining.to_parquet(new_chunk_path)
+        while len(combined) > self.CHUNK_SIZE:
+            combined.iloc[: self.CHUNK_SIZE].to_parquet(self._chunk_path(start, start + self.CHUNK_SIZE))
+            combined = combined.iloc[self.CHUNK_SIZE :].reset_index(drop=True)
+            start += self.CHUNK_SIZE
+        combined.to_parquet(self._chunk_path(start, start + self.CHUNK_SIZE))
 
         return len(existing)
