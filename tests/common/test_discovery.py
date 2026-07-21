@@ -111,6 +111,38 @@ class TestDiscoverSubclasses:
         )
         assert _Base not in found
 
+    def test_does_not_duplicate_class_reimported_by_another_module(self, tmp_path, monkeypatch):
+        # A module that merely imports a subclass defined elsewhere (e.g. a
+        # convenience re-export) should not cause that subclass to be
+        # reported twice.
+        pkg = "discovery_fixture_reexport"
+        monkeypatch.syspath_prepend(str(tmp_path))
+        _write_module(tmp_path, f"{pkg}/__init__.py", "")
+        _write_module(
+            tmp_path,
+            f"{pkg}/plugin_d.py",
+            """
+            from tests.common.test_discovery import _Base
+
+            class PluginD(_Base):
+                def run(self):
+                    return "d"
+            """,
+        )
+        _write_module(
+            tmp_path,
+            f"{pkg}/reexport.py",
+            f"""
+            from {pkg}.plugin_d import PluginD  # noqa: F401
+            """,
+        )
+        try:
+            found = discover_subclasses(tmp_path / pkg, _Base, module_prefix=pkg)
+            assert [c.__name__ for c in found] == ["PluginD"]
+        finally:
+            sys.modules.pop(f"{pkg}.plugin_d", None)
+            sys.modules.pop(f"{pkg}.reexport", None)
+
     def test_recurses_into_subdirectories(self, tmp_path, monkeypatch):
         pkg = "discovery_fixture_nested"
         monkeypatch.syspath_prepend(str(tmp_path))

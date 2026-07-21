@@ -32,6 +32,9 @@ def discover_subclasses(directory: Path | str, base_class: type[T], module_prefi
         List of matching subclass types, in the order files were found.
         Returns an empty list if `directory` doesn't exist. Modules that
         fail to import are silently skipped (e.g. missing optional deps).
+        A class is only reported once, from the module it's actually
+        defined in - a module that merely imports a subclass discovered
+        elsewhere in the tree won't produce a duplicate entry.
     """
     directory = Path(directory)
     if not directory.exists():
@@ -52,7 +55,12 @@ def discover_subclasses(directory: Path | str, base_class: type[T], module_prefi
             continue
 
         for _, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, base_class) and obj is not base_class and not inspect.isabstract(obj):
+            if (
+                obj.__module__ == module_name
+                and issubclass(obj, base_class)
+                and obj is not base_class
+                and not inspect.isabstract(obj)
+            ):
                 found.append(obj)
 
     return found
