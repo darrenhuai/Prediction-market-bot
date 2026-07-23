@@ -146,7 +146,7 @@ class PolymarketLegacyTradesIndexer(Indexer):
                 )
             )
         except Exception as e:
-            if "too large" in str(e).lower():
+            if "too large" in str(e).lower() and from_block < to_block:
                 mid = (from_block + to_block) // 2
                 left = self._fetch_logs_with_retry(client, topic, from_block, mid)
                 right = self._fetch_logs_with_retry(client, topic, mid + 1, to_block)
