@@ -175,7 +175,8 @@ SUBCATEGORY_PATTERNS = [
     ("CSGOGAME", "Esports", "CS:GO", "Games"),
     ("INTERNETINVITATIONAL", "Esports", "Other Esports", "Internet Invitational"),
     # === POLITICS: Presidential ===
-    ("PRES", "Politics", "Presidential", "General"),
+    # NOTE: "PRES" is a prefix of every other pattern in this section, so it
+    # must come last - otherwise it shadows all of them (see get_hierarchy).
     ("PRESNOMD", "Politics", "Presidential", "Nominations D"),
     ("PRESNOMR", "Politics", "Presidential", "Nominations R"),
     ("PRESPERSON", "Politics", "Presidential", "Person"),
@@ -203,6 +204,7 @@ SUBCATEGORY_PATTERNS = [
     ("PRESCHILE", "Politics", "Presidential", "Chile"),
     ("PRESPOLAND", "Politics", "Presidential", "Poland"),
     ("PRESLEAVESK", "Politics", "Presidential", "South Korea"),
+    ("PRES", "Politics", "Presidential", "General"),
     # === POLITICS: Popular Vote ===
     ("POPVOTEMOV", "Politics", "Popular Vote", "Margin"),
     ("POPVOTEKHNM", "Politics", "Popular Vote", "KH Margin"),
@@ -375,17 +377,17 @@ SUBCATEGORY_PATTERNS = [
     ("POWELLMENTION", "Finance", "Fed", "Powell Mentions"),
     # === FINANCE: S&P 500 ===
     ("INXU", "Finance", "S&P 500", "Up"),
+    ("INXDU", "Finance", "S&P 500", "Daily Up"),
     ("INXD", "Finance", "S&P 500", "Daily"),
     ("INXY", "Finance", "S&P 500", "Yearly"),
     ("INXW", "Finance", "S&P 500", "Weekly"),
-    ("INXDU", "Finance", "S&P 500", "Daily Up"),
     ("INX", "Finance", "S&P 500", "Other"),
     # === FINANCE: NASDAQ ===
     ("NASDAQ100U", "Finance", "NASDAQ", "Up"),
+    ("NASDAQ100DU", "Finance", "NASDAQ", "Daily Up"),
     ("NASDAQ100D", "Finance", "NASDAQ", "Daily"),
     ("NASDAQ100Y", "Finance", "NASDAQ", "Yearly"),
     ("NASDAQ100W", "Finance", "NASDAQ", "Weekly"),
-    ("NASDAQ100DU", "Finance", "NASDAQ", "Daily Up"),
     ("NASDAQ100", "Finance", "NASDAQ", "Other"),
     ("NASDAQ", "Finance", "NASDAQ", "General"),
     # === FINANCE: Bonds ===
