@@ -280,7 +280,6 @@ SUBCATEGORY_PATTERNS = [
     ("DNI", "Politics", "Cabinet", "DNI"),
     ("FBI", "Politics", "Cabinet", "FBI"),
     ("DOED", "Politics", "Cabinet", "Dept of Education"),
-    ("EC", "Politics", "Electoral College", "Other"),
     # === POLITICS: NYC Mayor ===
     ("MAYORNYCPARTY", "Politics", "NYC Mayor", "Party"),
     ("MAYORNYCNOMD", "Politics", "NYC Mayor", "Nominations"),
@@ -567,6 +566,12 @@ SUBCATEGORY_PATTERNS = [
     ("CASED", "Media", "Other Media", "Case D"),
     ("538APPROVE", "Media", "Polls", "538 Approve"),
     ("APRPOTUS", "Media", "Polls", "Approve POTUS"),
+    # "EC" is a 2-character substring that coincidentally appears inside many
+    # unrelated tickers (e.g. "SEC*", "FEDDECISION", "RATECUT", "ELECTION*",
+    # "RECSSNBER", "RTMINECRAFT"), so it must sort dead last as the fallback
+    # for genuine Electoral College tickers that no more specific pattern
+    # above already claimed.
+    ("EC", "Politics", "Electoral College", "Other"),
 ]
 
 

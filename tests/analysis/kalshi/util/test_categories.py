@@ -53,6 +53,15 @@ class TestElectoralCollegeNotShadowingCabinet:
             "DJT Blowout",
         )
 
+    def test_unrelated_tickers_containing_ec_not_shadowed(self):
+        # "EC" is buried inside these tickers by coincidence (e.g. the "EC"
+        # in "FEDDECISION", "RATECUT", "ELECTION") and previously won
+        # because it still sorted ahead of them in SUBCATEGORY_PATTERNS.
+        assert get_hierarchy("FEDDECISION") == ("Finance", "Fed", "Decisions")
+        assert get_hierarchy("RATECUT") == ("Finance", "Fed", "Rate Cut")
+        assert get_hierarchy("ELECTION") == ("Politics", "Other Elections", "Other")
+        assert get_hierarchy("RTMINECRAFT") == ("Entertainment", "Movies", "Minecraft")
+
 
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
