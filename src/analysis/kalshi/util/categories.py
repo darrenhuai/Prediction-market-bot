@@ -212,7 +212,6 @@ SUBCATEGORY_PATTERNS = [
     # === POLITICS: Electoral College ===
     ("ECMOV", "Politics", "Electoral College", "Margin"),
     ("ECDJTBLOWOUT", "Politics", "Electoral College", "DJT Blowout"),
-    ("EC", "Politics", "Electoral College", "Other"),
     ("CLOSESTSTATE", "Politics", "Electoral College", "Closest State"),
     ("SWINGSTATES24DJT", "Politics", "Electoral College", "Swing States DJT"),
     ("TIPPINGPOINT", "Politics", "Electoral College", "Tipping Point"),
@@ -281,6 +280,7 @@ SUBCATEGORY_PATTERNS = [
     ("DNI", "Politics", "Cabinet", "DNI"),
     ("FBI", "Politics", "Cabinet", "FBI"),
     ("DOED", "Politics", "Cabinet", "Dept of Education"),
+    ("EC", "Politics", "Electoral College", "Other"),
     # === POLITICS: NYC Mayor ===
     ("MAYORNYCPARTY", "Politics", "NYC Mayor", "Party"),
     ("MAYORNYCNOMD", "Politics", "NYC Mayor", "Nominations"),
