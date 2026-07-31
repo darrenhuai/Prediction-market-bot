@@ -63,6 +63,18 @@ class TestElectoralCollegeNotShadowingCabinet:
         assert get_hierarchy("RTMINECRAFT") == ("Entertainment", "Movies", "Minecraft")
 
 
+class TestOtherElectionsSubcategories:
+    def test_nj_governor_grouped_under_other_elections(self):
+        # ELECTIONMOVNJGOV was previously miscategorized under "NYC Mayor"
+        # (a copy/paste slip), despite sitting in the "Other Elections"
+        # section alongside ELECTIONMOVZOHRAN and ELECTIONMOVVAGOV.
+        assert get_hierarchy("ELECTIONMOVNJGOV") == (
+            "Politics",
+            "Other Elections",
+            "NJ Governor",
+        )
+
+
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
         assert get_hierarchy("INXDU") == ("Finance", "S&P 500", "Daily Up")

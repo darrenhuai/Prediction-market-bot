@@ -247,7 +247,6 @@ SUBCATEGORY_PATTERNS = [
     ("GOVSHUT", "Politics", "Government", "Shutdown"),
     ("GOVREOPEN2025", "Politics", "Government", "Reopen 2025"),
     ("GOVTCUTS", "Politics", "Government", "Cuts"),
-    ("GOV", "Politics", "Governor", "Other"),
     # === POLITICS: Trump Admin ===
     ("TRUMPMENTION", "Politics", "Trump Admin", "Mentions"),
     ("TRUMPMENTIONB", "Politics", "Trump Admin", "Mentions B"),
@@ -289,8 +288,12 @@ SUBCATEGORY_PATTERNS = [
     ("MAYORNYC", "Politics", "NYC Mayor", "General"),
     # === POLITICS: Other Elections ===
     ("ELECTIONMOVZOHRAN", "Politics", "Other Elections", "Zohran"),
-    ("ELECTIONMOVNJGOV", "Politics", "NYC Mayor", "NJ Governor"),
+    ("ELECTIONMOVNJGOV", "Politics", "Other Elections", "NJ Governor"),
     ("ELECTIONMOVVAGOV", "Politics", "Other Elections", "VA Governor"),
+    # "GOV" is a substring of ELECTIONMOVNJGOV/ELECTIONMOVVAGOV above, so the
+    # generic Governor fallback must sort after them (see the analogous fix
+    # for the generic "EC" pattern shadowing Cabinet secretary tickers).
+    ("GOV", "Politics", "Governor", "Other"),
     ("ELECTIONDAYS", "Politics", "Other Elections", "Days"),
     ("ELECTION", "Politics", "Other Elections", "Other"),
     ("MAYORSEATTLE", "Politics", "Other Elections", "Seattle Mayor"),
