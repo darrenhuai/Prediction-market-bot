@@ -22,7 +22,7 @@ def _pick(options, title):
         if 0 <= choice < len(options):
             return choice
         return None
-    except (ValueError, KeyboardInterrupt):
+    except (ValueError, KeyboardInterrupt, EOFError):
         return None
 
 def index(name=None):
