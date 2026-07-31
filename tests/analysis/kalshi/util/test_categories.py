@@ -25,6 +25,35 @@ class TestPresidentialSubcategories:
         assert get_hierarchy("PRES-24") == ("Politics", "Presidential", "General")
 
 
+class TestElectoralCollegeNotShadowingCabinet:
+    def test_cabinet_secretary_tickers_not_shadowed_by_ec(self):
+        # "EC" used to be listed early in the Electoral College section, and
+        # "EC" is a substring of "SECAG"/"SECDEF"/etc. (the "SEC" in
+        # "Secretary"), so every Cabinet secretary ticker was silently
+        # miscategorized as Electoral College instead of Cabinet.
+        assert get_hierarchy("SECAG") == ("Politics", "Cabinet", "Sec Agriculture")
+        assert get_hierarchy("SECDEF") == ("Politics", "Cabinet", "Sec Defense")
+        assert get_hierarchy("SECHHS") == ("Politics", "Cabinet", "Sec HHS")
+        assert get_hierarchy("SECTREASURY") == ("Politics", "Cabinet", "Sec Treasury")
+        assert get_hierarchy("SECSTATE") == ("Politics", "Cabinet", "Sec State")
+
+    def test_last_state_call_not_shadowed_by_ec(self):
+        assert get_hierarchy("LASTSTATECALL24") == (
+            "Politics",
+            "Electoral College",
+            "Last State Call",
+        )
+
+    def test_generic_ec_still_matches_as_fallback(self):
+        assert get_hierarchy("EC") == ("Politics", "Electoral College", "Other")
+        assert get_hierarchy("ECMOV") == ("Politics", "Electoral College", "Margin")
+        assert get_hierarchy("ECDJTBLOWOUT") == (
+            "Politics",
+            "Electoral College",
+            "DJT Blowout",
+        )
+
+
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
         assert get_hierarchy("INXDU") == ("Finance", "S&P 500", "Daily Up")
