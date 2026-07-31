@@ -5,10 +5,8 @@ from pathlib import Path
 
 from src.common.analysis import Analysis
 from src.common.indexer import Indexer
+from src.common.util.strings import snake_to_title
 
-
-def _title(s):
-    return s.replace('_', ' ').title()
 
 def _pick(options, title):
     print(f'\n{title}')
@@ -33,7 +31,7 @@ def index(name=None):
             if inst.name == name:
                 inst.run()
                 return
-    options = [f'{_title(cls().name)}: {cls().description}' for cls in indexers] + ['[Exit]']
+    options = [f'{snake_to_title(cls().name)}: {cls().description}' for cls in indexers] + ['[Exit]']
     choice = _pick(options, 'Select an indexer:')
     if choice is None or choice == len(options) - 1:
         return
@@ -50,7 +48,7 @@ def analyze(name=None):
             if inst.name == name:
                 inst.save(output_dir, formats=['json','csv'])
                 return
-    options = ['[All] Run all analyses'] + [f'{_title(cls().name)}: {cls().description}' for cls in analyses] + ['[Exit]']
+    options = ['[All] Run all analyses'] + [f'{snake_to_title(cls().name)}: {cls().description}' for cls in analyses] + ['[Exit]']
     choice = _pick(options, 'Select an analysis:')
     if choice is None or choice == len(options) - 1:
         return
