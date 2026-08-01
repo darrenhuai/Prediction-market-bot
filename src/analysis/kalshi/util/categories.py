@@ -309,8 +309,9 @@ SUBCATEGORY_PATTERNS = [
     ("VOTERFK", "Politics", "Other Elections", "RFK"),
     ("VOTEHEGSETH", "Politics", "Other Elections", "Hegseth"),
     ("VOTEPATEL", "Politics", "Other Elections", "Patel"),
-    ("VOTE", "Politics", "Other Elections", "Other"),
+    # PCTVOTEMAM must precede VOTE: "VOTE" is a substring of "PCTVOTEMAM".
     ("PCTVOTEMAM", "Politics", "Other Elections", "Mamdani Pct"),
+    ("VOTE", "Politics", "Other Elections", "Other"),
     ("ATTYGENVA", "Politics", "Other Elections", "VA Attorney General"),
     # === POLITICS: Canada ===
     ("CANADAPM", "Politics", "Canada", "PM"),
@@ -415,8 +416,9 @@ SUBCATEGORY_PATTERNS = [
     ("CPIYOY", "Finance", "Economic Indicators", "CPI YoY"),
     ("CPICOREYOY", "Finance", "Economic Indicators", "CPI Core YoY"),
     ("CPICORE", "Finance", "Economic Indicators", "CPI Core"),
-    ("CPI", "Finance", "Economic Indicators", "CPI"),
+    # ACPI must precede CPI: "CPI" is a substring of "ACPI".
     ("ACPI", "Finance", "Economic Indicators", "Adj CPI"),
+    ("CPI", "Finance", "Economic Indicators", "CPI"),
     ("GDP", "Finance", "Economic Indicators", "GDP"),
     ("PAYROLLS", "Finance", "Economic Indicators", "Payrolls"),
     ("U3", "Finance", "Economic Indicators", "Unemployment"),
