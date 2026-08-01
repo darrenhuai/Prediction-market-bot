@@ -37,6 +37,10 @@ SUBCATEGORY_PATTERNS = [
     ("NFC", "Sports", "NFL", "NFC"),
     ("AFC", "Sports", "NFL", "AFC"),
     ("SB", "Sports", "NFL", "Super Bowl"),
+    # === SPORTS: WNBA ===
+    # Must precede NBA: "NBAGAME"/"NBA" are substrings of "WNBAGAME"/"WNBA".
+    ("WNBAGAME", "Sports", "WNBA", "Games"),
+    ("WNBA", "Sports", "WNBA", "Other WNBA"),
     # === SPORTS: NBA ===
     ("MVENBASINGLEGAME", "Sports", "NBA", "Single-Game Props"),
     ("NBAGAME", "Sports", "NBA", "Games"),
@@ -81,8 +85,9 @@ SUBCATEGORY_PATTERNS = [
     ("NCAAMBSPREAD", "Sports", "NCAA Basketball", "Spreads"),
     ("NCAAMBACHAMP", "Sports", "NCAA Basketball", "Championship"),
     ("NCAAMB", "Sports", "NCAA Basketball", "Other NCAAMB"),
-    ("MARMAD", "Sports", "NCAA Basketball", "March Madness M"),
+    # WMARMAD must precede MARMAD: "MARMAD" is a substring of "WMARMAD".
     ("WMARMAD", "Sports", "NCAA Basketball", "March Madness W"),
+    ("MARMAD", "Sports", "NCAA Basketball", "March Madness M"),
     # === SPORTS: NHL ===
     ("NHLGAME", "Sports", "NHL", "Games"),
     ("NHLSERIES", "Sports", "NHL", "Series"),
@@ -92,9 +97,6 @@ SUBCATEGORY_PATTERNS = [
     ("NHLWEST", "Sports", "NHL", "Western Conf"),
     ("NHL4NATIONS", "Sports", "NHL", "4 Nations"),
     ("NHL", "Sports", "NHL", "Other NHL"),
-    # === SPORTS: WNBA ===
-    ("WNBAGAME", "Sports", "WNBA", "Games"),
-    ("WNBA", "Sports", "WNBA", "Other WNBA"),
     # === SPORTS: Tennis ===
     ("ATPMATCH", "Sports", "Tennis", "ATP Matches"),
     ("WTAMATCH", "Sports", "Tennis", "WTA Matches"),

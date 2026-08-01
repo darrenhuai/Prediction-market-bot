@@ -75,6 +75,34 @@ class TestOtherElectionsSubcategories:
         )
 
 
+class TestWomensSportsNotShadowedByMens:
+    def test_wnba_not_shadowed_by_nba(self):
+        # "NBAGAME"/"NBA" are substrings of "WNBAGAME"/"WNBA", so WNBA
+        # tickers were silently merged into the men's NBA bucket.
+        assert get_hierarchy("WNBAGAME") == ("Sports", "WNBA", "Games")
+        assert get_hierarchy("WNBA") == ("Sports", "WNBA", "Other WNBA")
+
+    def test_nba_still_matches(self):
+        assert get_hierarchy("NBAGAME") == ("Sports", "NBA", "Games")
+        assert get_hierarchy("NBA") == ("Sports", "NBA", "Other NBA")
+
+    def test_wmarmad_not_shadowed_by_marmad(self):
+        # "MARMAD" is a substring of "WMARMAD", so the women's March
+        # Madness ticker was silently categorized as the men's bracket.
+        assert get_hierarchy("WMARMAD") == (
+            "Sports",
+            "NCAA Basketball",
+            "March Madness W",
+        )
+
+    def test_marmad_still_matches(self):
+        assert get_hierarchy("MARMAD") == (
+            "Sports",
+            "NCAA Basketball",
+            "March Madness M",
+        )
+
+
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
         assert get_hierarchy("INXDU") == ("Finance", "S&P 500", "Daily Up")
