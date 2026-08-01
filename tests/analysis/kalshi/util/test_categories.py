@@ -103,6 +103,16 @@ class TestWomensSportsNotShadowedByMens:
         )
 
 
+class TestTariffSubcategories:
+    def test_specific_tariff_patterns_not_shadowed_by_generic_tariff(self):
+        # "TARIFF" is a substring of both patterns below; it must not win.
+        assert get_hierarchy("LARGETARIFF") == ("Finance", "Tariffs", "Large")
+        assert get_hierarchy("TARIFFSC") == ("Finance", "Tariffs", "C")
+
+    def test_generic_tariff_still_matches_as_fallback(self):
+        assert get_hierarchy("TARIFF") == ("Finance", "Tariffs", "General")
+
+
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
         assert get_hierarchy("INXDU") == ("Finance", "S&P 500", "Daily Up")
