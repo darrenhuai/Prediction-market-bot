@@ -428,9 +428,10 @@ SUBCATEGORY_PATTERNS = [
     ("MUSKPACKAGEVOTE", "Finance", "Other Finance", "Musk Package Vote"),
     ("MUSKDOGE", "Finance", "Other Finance", "Musk DOGE"),
     ("NEWPARTYMUSK", "Finance", "Other Finance", "Musk Party"),
-    ("TARIFF", "Finance", "Tariffs", "General"),
+    # LARGETARIFF/TARIFFSC must precede TARIFF: "TARIFF" is a substring of both.
     ("LARGETARIFF", "Finance", "Tariffs", "Large"),
     ("TARIFFSC", "Finance", "Tariffs", "C"),
+    ("TARIFF", "Finance", "Tariffs", "General"),
     ("FTACOUNTRIES", "Finance", "Tariffs", "FTA Countries"),
     ("DEBTSH", "Finance", "Other Finance", "Debt Shrink"),
     ("GAMBLINGREPEAL", "Finance", "Other Finance", "Gambling Repeal"),
