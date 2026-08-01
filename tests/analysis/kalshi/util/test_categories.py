@@ -113,6 +113,28 @@ class TestTariffSubcategories:
         assert get_hierarchy("TARIFF") == ("Finance", "Tariffs", "General")
 
 
+class TestEconomicIndicatorSubcategories:
+    def test_acpi_not_shadowed_by_cpi(self):
+        # "CPI" is a substring of "ACPI"; it must not win.
+        assert get_hierarchy("ACPI") == ("Finance", "Economic Indicators", "Adj CPI")
+
+    def test_cpi_still_matches_as_fallback(self):
+        assert get_hierarchy("CPI") == ("Finance", "Economic Indicators", "CPI")
+
+
+class TestOtherElectionsVoteSubcategories:
+    def test_pctvotemam_not_shadowed_by_vote(self):
+        # "VOTE" is a substring of "PCTVOTEMAM"; it must not win.
+        assert get_hierarchy("PCTVOTEMAM") == (
+            "Politics",
+            "Other Elections",
+            "Mamdani Pct",
+        )
+
+    def test_vote_still_matches_as_fallback(self):
+        assert get_hierarchy("VOTE") == ("Politics", "Other Elections", "Other")
+
+
 class TestFinanceDailyUpSubcategories:
     def test_inxdu_not_shadowed_by_inxd(self):
         assert get_hierarchy("INXDU") == ("Finance", "S&P 500", "Daily Up")
