@@ -1,4 +1,11 @@
 def remove_vig(yes_price, no_price):
+    """Normalize YES/NO prices into fair probabilities that sum to 1.
+
+    Kalshi's yes_price + no_price typically exceeds 100 cents (the "vig"),
+    so the raw prices overstate the combined probability. Rescale each side
+    proportionally so they sum to 1, preserving their relative weighting.
+    Falls back to an even 50/50 split if both prices are 0.
+    """
     raw_yes = yes_price / 100.0
     raw_no = no_price / 100.0
     total = raw_yes + raw_no
