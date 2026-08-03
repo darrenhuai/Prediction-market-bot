@@ -46,9 +46,14 @@ class FPMMTrade:
 
     @property
     def price(self) -> float:
-        """Calculate price in collateral per token."""
+        """Calculate price in collateral per token.
+
+        amount is in 6-decimal collateral units while outcome_tokens is in
+        18-decimal token units, so the ratio must go through the decimal-
+        normalized volume/size (not the raw fields) or it's off by 1e12.
+        """
         if self.outcome_tokens > 0:
-            return self.amount / self.outcome_tokens
+            return self.volume / self.size
         return 0.0
 
     @property
