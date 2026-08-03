@@ -4,7 +4,6 @@ This roadmap tracks practical improvements for turning the repository into a str
 
 ## Near term
 
-- Add tests for CLI helper functions.
 - Improve README setup instructions.
 - Add examples for running one indexer and one analysis.
 - Document required environment variables for each data source.
@@ -19,7 +18,6 @@ This roadmap tracks practical improvements for turning the repository into a str
 
 ## Engineering improvements
 
-- Add CI for linting and tests.
 - Add structured logging for indexer runs.
 - Add retry and backoff behavior around external API calls.
 - Separate research notebooks from reusable library code.
