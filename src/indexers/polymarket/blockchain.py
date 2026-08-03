@@ -84,7 +84,7 @@ class BlockchainTrade:
 
     @property
     def side(self) -> str:
-        """BUY or SELL from taker's perspective."""
+        """BUY or SELL from the maker's perspective (mirrors is_buy)."""
         return "BUY" if self.is_buy else "SELL"
 
     @property
