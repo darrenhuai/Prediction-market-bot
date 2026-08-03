@@ -37,7 +37,12 @@ def ev_no(fair_prob_no, no_price_cents):
     return fair_prob_no - cost
 
 
-def kelly_fraction(prob, payout_multiple, fraction=0.25):
+def kelly_fraction(prob: float, payout_multiple: float, fraction: float = 0.25) -> float:
+    """Fractional-Kelly stake as a proportion of bankroll.
+
+    Full Kelly is (b*p - q) / b, clamped to 0 for a non-positive edge, then
+    scaled by `fraction` (default: quarter-Kelly) to reduce variance.
+    """
     b = payout_multiple
     if b == 0:
         return 0.0
@@ -46,9 +51,9 @@ def kelly_fraction(prob, payout_multiple, fraction=0.25):
     return max(0.0, kelly * fraction)
 
 
-def fmt_pct(v, decimals=1):
+def fmt_pct(v: float, decimals: int = 1) -> str:
     return f"{v * 100:.{decimals}f}%"
 
 
-def fmt_cents(c):
+def fmt_cents(c: float) -> str:
     return f"${c / 100:.2f}"
