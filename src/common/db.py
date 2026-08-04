@@ -2,18 +2,19 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import duckdb
 
 DB_PATH = Path("data/kalshi.duckdb")
 
-def get_conn(path=DB_PATH):
+def get_conn(path: Path = DB_PATH) -> duckdb.DuckDBPyConnection:
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(path))
     _init_schema(conn)
     return conn
 
-def _init_schema(conn):
+def _init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("""
         CREATE TABLE IF NOT EXISTS markets (
             ticker VARCHAR PRIMARY KEY,
@@ -48,7 +49,7 @@ def _init_schema(conn):
         )
     """)
 
-def upsert_markets(conn, markets):
+def upsert_markets(conn: duckdb.DuckDBPyConnection, markets: list[dict[str, Any]]) -> int:
     count = 0
     for m in markets:
         conn.execute(
@@ -58,7 +59,7 @@ def upsert_markets(conn, markets):
         count += 1
     return count
 
-def upsert_positions(conn, positions):
+def upsert_positions(conn: duckdb.DuckDBPyConnection, positions: list[dict[str, Any]]) -> int:
     count = 0
     for p in positions:
         conn.execute(
