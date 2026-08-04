@@ -1,4 +1,4 @@
-def remove_vig(yes_price, no_price):
+def remove_vig(yes_price: float, no_price: float) -> tuple[float, float]:
     """Normalize YES/NO prices into fair probabilities that sum to 1.
 
     Kalshi's yes_price + no_price typically exceeds 100 cents (the "vig"),
@@ -14,7 +14,7 @@ def remove_vig(yes_price, no_price):
     return raw_yes / total, raw_no / total
 
 
-def ev_yes(fair_prob, yes_price_cents):
+def ev_yes(fair_prob: float, yes_price_cents: float) -> float:
     """Expected profit (in dollars per $1 of exposure) from buying a YES contract.
 
     If YES resolves (probability fair_prob), the contract pays $1, for a
@@ -27,7 +27,7 @@ def ev_yes(fair_prob, yes_price_cents):
     return fair_prob - cost
 
 
-def ev_no(fair_prob_no, no_price_cents):
+def ev_no(fair_prob_no: float, no_price_cents: float) -> float:
     """Expected profit (in dollars per $1 of exposure) from buying a NO contract.
 
     Same derivation as ev_yes, with fair_prob_no as the probability NO
