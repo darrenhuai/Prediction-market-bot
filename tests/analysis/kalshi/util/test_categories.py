@@ -10,7 +10,7 @@ sub-category silently fell back to the generic bucket instead.
 
 from __future__ import annotations
 
-from src.analysis.kalshi.util.categories import get_hierarchy
+from src.analysis.kalshi.util.categories import get_group, get_hierarchy
 
 
 class TestPresidentialSubcategories:
@@ -147,3 +147,16 @@ class TestFinanceDailyUpSubcategories:
 
     def test_nasdaq100d_still_matches(self):
         assert get_hierarchy("NASDAQ100D") == ("Finance", "NASDAQ", "Daily")
+
+
+class TestUnmatchedCategoryFallback:
+    def test_unknown_category_falls_back_to_other(self):
+        assert get_hierarchy("TOTALLYUNKNOWNXYZ") == ("Other", "Other", "TOTALLYUNKNOWNXYZ")
+
+
+class TestGetGroup:
+    def test_returns_only_the_group(self):
+        assert get_group("NBA") == "Sports"
+
+    def test_unknown_category_returns_other(self):
+        assert get_group("TOTALLYUNKNOWNXYZ") == "Other"
