@@ -39,7 +39,8 @@ class KalshiCalibrationDeviationOverTimeAnalysis(Analysis):
             WITH resolved_markets AS (
                 SELECT ticker, result
                 FROM '{self.markets_dir}/*.parquet'
-                WHERE result IN ('yes', 'no')
+                WHERE status = 'finalized'
+                  AND result IN ('yes', 'no')
             ),
             trade_positions AS (
                 -- Buyer side (taker)

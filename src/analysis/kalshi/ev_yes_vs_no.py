@@ -53,7 +53,8 @@ class EvYesVsNoAnalysis(Analysis):
                 SUM(t.count) AS total_contracts
             FROM '{self.trades_dir}/*.parquet' t
             INNER JOIN '{self.markets_dir}/*.parquet' m ON t.ticker = m.ticker
-            WHERE m.result IN ('yes', 'no')
+            WHERE m.status = 'finalized'
+              AND m.result IN ('yes', 'no')
               AND t.yes_price BETWEEN 1 AND 99
             GROUP BY t.yes_price
             ORDER BY t.yes_price
@@ -69,7 +70,8 @@ class EvYesVsNoAnalysis(Analysis):
                 SUM(t.count) AS total_contracts
             FROM '{self.trades_dir}/*.parquet' t
             INNER JOIN '{self.markets_dir}/*.parquet' m ON t.ticker = m.ticker
-            WHERE m.result IN ('yes', 'no')
+            WHERE m.status = 'finalized'
+              AND m.result IN ('yes', 'no')
               AND t.no_price BETWEEN 1 AND 99
             GROUP BY t.no_price
             ORDER BY t.no_price
