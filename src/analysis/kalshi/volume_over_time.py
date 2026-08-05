@@ -34,7 +34,7 @@ class VolumeOverTimeAnalysis(Analysis):
             f"""
             SELECT
                 DATE_TRUNC('quarter', created_time) AS quarter,
-                SUM(count) AS volume_usd
+                SUM(count * (CASE WHEN taker_side = 'yes' THEN yes_price ELSE no_price END) / 100.0) AS volume_usd
             FROM '{self.trades_dir}/*.parquet'
             GROUP BY quarter
             ORDER BY quarter
