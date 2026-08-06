@@ -2,7 +2,7 @@
 Base class for analyses that generate figures and data outputs.
 
 Usage:
-    from common.analysis import Analysis, AnalysisOutput
+    from src.common.analysis import Analysis, AnalysisOutput
 
     class MyAnalysis(Analysis):
         def run(self) -> AnalysisOutput:

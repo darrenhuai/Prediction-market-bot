@@ -2,7 +2,7 @@
 Python types for generating valid ResearchChart configurations.
 
 Usage:
-    from common.chart import ChartConfig, ChartType, UnitType, Series
+    from src.common.interfaces.chart import ChartConfig, ChartType, UnitType, Series
 
     config = ChartConfig(
         type=ChartType.LINE,
