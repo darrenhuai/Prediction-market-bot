@@ -36,6 +36,11 @@ SUBCATEGORY_PATTERNS = [
     ("NFL", "Sports", "NFL", "Other NFL"),
     ("NFC", "Sports", "NFL", "NFC"),
     ("AFC", "Sports", "NFL", "AFC"),
+    # Must precede "SB": SBADS/SBSETLISTS/SBPERFORM are Entertainment tickers,
+    # not Sports, but "SB" would otherwise shadow them since it's a substring.
+    ("SBADS", "Entertainment", "TV/Media", "Super Bowl Ads"),
+    ("SBSETLISTS", "Entertainment", "TV/Media", "Super Bowl Setlists"),
+    ("SBPERFORM", "Entertainment", "TV/Media", "Super Bowl Performance"),
     ("SB", "Sports", "NFL", "Super Bowl"),
     # === SPORTS: WNBA ===
     # Must precede NBA: "NBAGAME"/"NBA" are substrings of "WNBAGAME"/"WNBA".
@@ -525,9 +530,8 @@ SUBCATEGORY_PATTERNS = [
     ("SNFMENTION", "Entertainment", "TV/Media", "SNF Mentions"),
     ("TNFMENTION", "Entertainment", "TV/Media", "TNF Mentions"),
     ("SUPERBOWLHEADLINE", "Entertainment", "TV/Media", "Super Bowl Headlines"),
-    ("SBADS", "Entertainment", "TV/Media", "Super Bowl Ads"),
-    ("SBSETLISTS", "Entertainment", "TV/Media", "Super Bowl Setlists"),
-    ("SBPERFORM", "Entertainment", "TV/Media", "Super Bowl Performance"),
+    # SBADS/SBSETLISTS/SBPERFORM are defined earlier (before Sports "SB") to
+    # avoid being shadowed by it.
     # === ENTERTAINMENT: Other ===
     ("TOPMODEL", "Entertainment", "Other Entertainment", "Top Model"),
     ("APPRANKFREE", "Entertainment", "Other Entertainment", "App Rank Free"),
