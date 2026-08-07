@@ -211,6 +211,10 @@ SUBCATEGORY_PATTERNS = [
     ("PRESCHILE", "Politics", "Presidential", "Chile"),
     ("PRESPOLAND", "Politics", "Presidential", "Poland"),
     ("PRESLEAVESK", "Politics", "Presidential", "South Korea"),
+    # BOLIVIAPRES/SKPRES are World Events tickers, not U.S. Presidential ones,
+    # but must precede "PRES" since it would otherwise shadow them too.
+    ("BOLIVIAPRES", "World Events", "Other Events", "Bolivia President"),
+    ("SKPRES", "World Events", "Other Events", "South Korea President"),
     ("PRES", "Politics", "Presidential", "General"),
     # === POLITICS: Popular Vote ===
     ("POPVOTEMOV", "Politics", "Popular Vote", "Margin"),
@@ -563,8 +567,7 @@ SUBCATEGORY_PATTERNS = [
     ("OTEEPSTEIN", "World Events", "Other Events", "OTE Epstein"),
     ("EPSTEIN", "World Events", "Other Events", "Epstein"),
     ("ZELENSKYYPUTINMEET", "World Events", "Other Events", "Zelensky Putin Meet"),
-    ("BOLIVIAPRES", "World Events", "Other Events", "Bolivia President"),
-    ("SKPRES", "World Events", "Other Events", "South Korea President"),
+    # BOLIVIAPRES/SKPRES are defined earlier (before Presidential "PRES") to avoid being shadowed by it.
     ("LAGODAYS", "World Events", "Other Events", "Lagos Days"),
     ("ARREST", "World Events", "Other Events", "Arrests"),
     # === MEDIA ===
