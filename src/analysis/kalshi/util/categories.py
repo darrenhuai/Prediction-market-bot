@@ -369,6 +369,9 @@ SUBCATEGORY_PATTERNS = [
     ("ETH", "Crypto", "Ethereum", "Price"),
     # === CRYPTO: Other ===
     ("DOGED", "Crypto", "Other Crypto", "Doge Daily"),
+    # MUSKDOGE (Musk's "Dept. of Government Efficiency") must precede DOGE:
+    # "DOGE" is a substring of "MUSKDOGE" but refers to a different market.
+    ("MUSKDOGE", "Finance", "Other Finance", "Musk DOGE"),
     ("DOGE", "Crypto", "Other Crypto", "Doge"),
     ("SOL", "Crypto", "Other Crypto", "Solana"),
     ("XRP", "Crypto", "Other Crypto", "XRP"),
@@ -433,7 +436,7 @@ SUBCATEGORY_PATTERNS = [
     ("EARNINGSMENTIONTSLA", "Finance", "Other Finance", "TSLA Earnings"),
     ("TESLA", "Finance", "Other Finance", "Tesla"),
     ("MUSKPACKAGEVOTE", "Finance", "Other Finance", "Musk Package Vote"),
-    ("MUSKDOGE", "Finance", "Other Finance", "Musk DOGE"),
+    # MUSKDOGE is defined earlier (before Crypto "DOGE") to avoid being shadowed by it.
     ("NEWPARTYMUSK", "Finance", "Other Finance", "Musk Party"),
     # LARGETARIFF/TARIFFSC must precede TARIFF: "TARIFF" is a substring of both.
     ("LARGETARIFF", "Finance", "Tariffs", "Large"),
