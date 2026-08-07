@@ -320,6 +320,9 @@ SUBCATEGORY_PATTERNS = [
     ("VOTEPATEL", "Politics", "Other Elections", "Patel"),
     # PCTVOTEMAM must precede VOTE: "VOTE" is a substring of "PCTVOTEMAM".
     ("PCTVOTEMAM", "Politics", "Other Elections", "Mamdani Pct"),
+    # MUSKPACKAGEVOTE is a Finance ticker, not Politics, but must precede VOTE
+    # since "VOTE" would otherwise shadow it too.
+    ("MUSKPACKAGEVOTE", "Finance", "Other Finance", "Musk Package Vote"),
     ("VOTE", "Politics", "Other Elections", "Other"),
     ("ATTYGENVA", "Politics", "Other Elections", "VA Attorney General"),
     # === POLITICS: Canada ===
@@ -441,7 +444,7 @@ SUBCATEGORY_PATTERNS = [
     ("IPO", "Finance", "Other Finance", "IPOs"),
     ("EARNINGSMENTIONTSLA", "Finance", "Other Finance", "TSLA Earnings"),
     ("TESLA", "Finance", "Other Finance", "Tesla"),
-    ("MUSKPACKAGEVOTE", "Finance", "Other Finance", "Musk Package Vote"),
+    # MUSKPACKAGEVOTE is defined earlier (before Politics "VOTE") to avoid being shadowed by it.
     # MUSKDOGE is defined earlier (before Crypto "DOGE") to avoid being shadowed by it.
     ("NEWPARTYMUSK", "Finance", "Other Finance", "Musk Party"),
     # LARGETARIFF/TARIFFSC must precede TARIFF: "TARIFF" is a substring of both.
