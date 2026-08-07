@@ -370,6 +370,8 @@ SUBCATEGORY_PATTERNS = [
     ("ETHD", "Crypto", "Ethereum", "Daily"),
     ("ETHMAXY", "Crypto", "Ethereum", "Max Yearly"),
     ("ETHMINY", "Crypto", "Ethereum", "Min Yearly"),
+    # MANTISFREETHROW must precede ETH: "ETH" is a substring of "freeTHrow".
+    ("MANTISFREETHROW", "Entertainment", "Other Entertainment", "Mantis Free Throw"),
     ("ETH", "Crypto", "Ethereum", "Price"),
     # === CRYPTO: Other ===
     ("DOGED", "Crypto", "Other Crypto", "Doge Daily"),
@@ -546,7 +548,7 @@ SUBCATEGORY_PATTERNS = [
     ("TIME", "Entertainment", "Other Entertainment", "Time"),
     ("GTA6", "Entertainment", "Other Entertainment", "GTA 6"),
     ("ANIME", "Entertainment", "Other Entertainment", "Anime"),
-    ("MANTISFREETHROW", "Entertainment", "Other Entertainment", "Mantis Free Throw"),
+    # MANTISFREETHROW is defined earlier (before Crypto "ETH") to avoid being shadowed by it.
     # === SCIENCE/TECH ===
     ("LLM1", "Science/Tech", "AI", "LLM Benchmark"),
     ("LLM", "Science/Tech", "AI", "LLM"),
