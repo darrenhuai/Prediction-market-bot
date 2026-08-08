@@ -126,6 +126,10 @@ SUBCATEGORY_PATTERNS = [
     ("PGARYDER", "Sports", "Golf", "Ryder Cup"),
     ("PGARYDERCUPD1", "Sports", "Golf", "Ryder Cup Day 1"),
     ("PGARYDERTOP", "Sports", "Golf", "Ryder Cup Top"),
+    # EFLCHAMPIONSHIPGAME/EFLCUPGAME are Soccer tickers, not Golf, but must
+    # precede "PGA" since "PGA" is a substring of both.
+    ("EFLCHAMPIONSHIPGAME", "Sports", "Soccer", "EFL Championship"),
+    ("EFLCUPGAME", "Sports", "Soccer", "EFL Cup"),
     ("PGA", "Sports", "Golf", "Other PGA"),
     ("MASTERS", "Sports", "Golf", "Masters"),
     ("USOPEN", "Sports", "Golf", "US Open"),
@@ -149,8 +153,7 @@ SUBCATEGORY_PATTERNS = [
     ("FIFAGAME", "Sports", "Soccer", "FIFA Games"),
     ("CLUBWCGAME", "Sports", "Soccer", "Club WC Games"),
     ("CLUBWC", "Sports", "Soccer", "Club World Cup"),
-    ("EFLCHAMPIONSHIPGAME", "Sports", "Soccer", "EFL Championship"),
-    ("EFLCUPGAME", "Sports", "Soccer", "EFL Cup"),
+    # EFLCHAMPIONSHIPGAME/EFLCUPGAME are defined earlier (before Golf "PGA") to avoid being shadowed by it.
     ("UELGAME", "Sports", "Soccer", "Europa League"),
     ("EUROLEAGUEGAME", "Sports", "Soccer", "Euroleague"),
     ("SUPERLIGGAME", "Sports", "Soccer", "Super Lig"),
