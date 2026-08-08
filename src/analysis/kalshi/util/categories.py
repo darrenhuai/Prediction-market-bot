@@ -482,6 +482,9 @@ SUBCATEGORY_PATTERNS = [
     ("RAINNYCM", "Weather", "Precipitation", "NYC Rain Monthly"),
     ("RAIN", "Weather", "Precipitation", "Other Rain"),
     ("SNOWNYM", "Weather", "Precipitation", "NYC Snow Monthly"),
+    # RTSNOWWHITE is an Entertainment ticker, not Weather, but must precede
+    # "SNOW" since "SNOW" is a substring of "RTSNOWWHITE".
+    ("RTSNOWWHITE", "Entertainment", "Movies", "Snow White"),
     ("SNOW", "Weather", "Precipitation", "Other Snow"),
     ("TORNADO", "Weather", "Severe Weather", "Tornado"),
     ("HURCAT", "Weather", "Severe Weather", "Hurricane"),
@@ -502,7 +505,7 @@ SUBCATEGORY_PATTERNS = [
     ("RTNOSFERATU", "Entertainment", "Movies", "Nosferatu"),
     ("RTMUFASA", "Entertainment", "Movies", "Mufasa"),
     ("RTMINECRAFT", "Entertainment", "Movies", "Minecraft"),
-    ("RTSNOWWHITE", "Entertainment", "Movies", "Snow White"),
+    # RTSNOWWHITE is defined earlier (before Weather "SNOW") to avoid being shadowed by it.
     ("RTSUPERMAN", "Entertainment", "Movies", "Superman"),
     ("RTDOGMAN", "Entertainment", "Movies", "Dog Man"),
     ("RTLASTBREATH", "Entertainment", "Movies", "Last Breath"),
