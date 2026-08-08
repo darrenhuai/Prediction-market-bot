@@ -513,6 +513,13 @@ SUBCATEGORY_PATTERNS = [
     ("RTNOVOCAINE", "Entertainment", "Movies", "Novocaine"),
     ("RTFANTASTICFOUR", "Entertainment", "Movies", "Fantastic Four"),
     ("RTJURASSICWORLDREBIRTH", "Entertainment", "Movies", "Jurassic World"),
+    # TOPARTIST/SONGSONCHARTTSWIFT* are Music tickers, not Movies, but must
+    # precede "RT" since "RT" is a substring of all of them (e.g. topaRTist,
+    # chaRT).
+    ("TOPARTIST", "Entertainment", "Music", "Top Artist"),
+    ("SONGSONCHARTTSWIFT", "Entertainment", "Music", "Taylor Swift Songs"),
+    ("SONGSONCHARTTSWIFT2", "Entertainment", "Music", "Taylor Swift Songs 2"),
+    ("SONGSONCHARTTSWIFT6", "Entertainment", "Music", "Taylor Swift Songs 6"),
     ("RT", "Entertainment", "Movies", "Rotten Tomatoes"),
     # === ENTERTAINMENT: Awards ===
     ("OSCARPIC", "Entertainment", "Awards", "Oscar Best Picture"),
@@ -533,12 +540,9 @@ SUBCATEGORY_PATTERNS = [
     ("NETFLIXRANKSHOW", "Entertainment", "Netflix", "Show Rank"),
     ("NETFLIX", "Entertainment", "Netflix", "Other"),
     # === ENTERTAINMENT: Music ===
-    ("TOPARTIST", "Entertainment", "Music", "Top Artist"),
+    # TOPARTIST/SONGSONCHARTTSWIFT* are defined earlier (before Movies "RT") to avoid being shadowed by it.
     ("TOPSONG", "Entertainment", "Music", "Top Song"),
     ("TOPALBUM", "Entertainment", "Music", "Top Album"),
-    ("SONGSONCHARTTSWIFT", "Entertainment", "Music", "Taylor Swift Songs"),
-    ("SONGSONCHARTTSWIFT2", "Entertainment", "Music", "Taylor Swift Songs 2"),
-    ("SONGSONCHARTTSWIFT6", "Entertainment", "Music", "Taylor Swift Songs 6"),
     ("ALBUUMSALESSWIFT", "Entertainment", "Music", "Taylor Swift Album Sales"),
     ("SWIFTMENTION", "Entertainment", "Music", "Taylor Swift Mentions"),
     ("TOP10BILLBOARDSPOTSTS", "Entertainment", "Music", "Billboard Top 10 TS"),
