@@ -10,6 +10,13 @@ KALSHI_API_HOST = "https://api.elections.kalshi.com/trade-api/v2"
 
 
 class KalshiClient:
+    """Read-only Kalshi API client used by the indexers.
+
+    Unlike src.common.kalshi_client.KalshiClient (which also supports
+    authenticated trading/portfolio endpoints), this client only hits
+    the public markets/trades endpoints and needs no credentials.
+    """
+
     def __init__(self, host: str = KALSHI_API_HOST):
         self.host = host
         self.client = httpx.Client(base_url=host, timeout=30.0)
@@ -31,6 +38,7 @@ class KalshiClient:
         return response.json()
 
     def get_market(self, ticker: str) -> Market:
+        """Fetch a single market by ticker."""
         data = self._get(f"/markets/{ticker}")
         return Market.from_dict(data["market"])
 
@@ -42,6 +50,7 @@ class KalshiClient:
         min_ts: Optional[int] = None,
         max_ts: Optional[int] = None,
     ) -> list[Trade]:
+        """Page through /markets/trades for a single ticker and return every trade as a flat list."""
         all_trades = []
         cursor = None
 
@@ -69,11 +78,13 @@ class KalshiClient:
         return all_trades
 
     def list_markets(self, limit: int = 20, **kwargs) -> list[Market]:
+        """Fetch a single page of markets. Extra kwargs are passed through as query params."""
         params = {"limit": limit, **kwargs}
         data = self._get("/markets", params=params)
         return [Market.from_dict(m) for m in data.get("markets", [])]
 
     def list_all_markets(self, limit: int = 200) -> list[Market]:
+        """Page through /markets and return every market as a flat list."""
         all_markets = []
         cursor = None
 
@@ -102,6 +113,7 @@ class KalshiClient:
         min_close_ts: Optional[int] = None,
         max_close_ts: Optional[int] = None,
     ) -> Generator[tuple[list[Market], Optional[str]], None, None]:
+        """Page through /markets, yielding (markets, next_cursor) for each page."""
         while True:
             params = {"limit": limit}
             if cursor:
@@ -122,5 +134,6 @@ class KalshiClient:
                 break
 
     def get_recent_trades(self, limit: int = 100) -> list[Trade]:
+        """Fetch the most recent trades across all markets."""
         data = self._get("/markets/trades", params={"limit": limit})
         return [Trade.from_dict(t) for t in data.get("trades", [])]
