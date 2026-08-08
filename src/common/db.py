@@ -1,3 +1,5 @@
+"""DuckDB storage for indexed Kalshi markets and positions."""
+
 from __future__ import annotations
 
 import json
@@ -9,6 +11,7 @@ import duckdb
 DB_PATH = Path("data/kalshi.duckdb")
 
 def get_conn(path: Path = DB_PATH) -> duckdb.DuckDBPyConnection:
+    """Open (creating the parent dir and schema if needed) the DuckDB database at `path`."""
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = duckdb.connect(str(path))
     _init_schema(conn)
@@ -50,6 +53,7 @@ def _init_schema(conn: duckdb.DuckDBPyConnection) -> None:
     """)
 
 def upsert_markets(conn: duckdb.DuckDBPyConnection, markets: list[dict[str, Any]]) -> int:
+    """Insert or replace each market row keyed by ticker. Returns the number of rows processed."""
     count = 0
     for m in markets:
         conn.execute(
@@ -60,11 +64,16 @@ def upsert_markets(conn: duckdb.DuckDBPyConnection, markets: list[dict[str, Any]
     return count
 
 def upsert_positions(conn: duckdb.DuckDBPyConnection, positions: list[dict[str, Any]]) -> int:
+    """Insert or replace each position row keyed by ticker, splitting the signed
+    `position` field into separate yes_position/no_position columns.
+    Returns the number of rows processed.
+    """
     count = 0
     for p in positions:
+        position = p.get("position", 0)
         conn.execute(
             "INSERT OR REPLACE INTO positions (ticker,yes_position,no_position,total_cost,market_exposure,realized_pnl,unrealized_pnl,raw) VALUES (?,?,?,?,?,?,?,?)",
-            [p.get("ticker"),p.get("position",0) if p.get("position",0)>0 else 0,abs(p.get("position",0)) if p.get("position",0)<0 else 0,p.get("total_traded"),p.get("market_exposure"),p.get("realized_pnl"),p.get("unrealized_pnl"),json.dumps(p)]
+            [p.get("ticker"),position if position>0 else 0,abs(position) if position<0 else 0,p.get("total_traded"),p.get("market_exposure"),p.get("realized_pnl"),p.get("unrealized_pnl"),json.dumps(p)]
         )
         count += 1
     return count
