@@ -117,6 +117,49 @@ class TestGetAllMarkets:
         assert c.get_all_markets() == []
 
 
+class TestGetAllPositions:
+    def test_pages_through_cursor_until_exhausted(self):
+        pages = [
+            {"market_positions": [{"ticker": "A"}, {"ticker": "B"}], "cursor": "page2"},
+            {"market_positions": [{"ticker": "C"}], "cursor": None},
+        ]
+        calls = {"n": 0}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/login"):
+                return httpx.Response(200, json={"token": "tok"})
+            page = pages[calls["n"]]
+            calls["n"] += 1
+            return httpx.Response(200, json=page)
+
+        c = mock_client(handler)
+        results = c.get_all_positions()
+        assert [p["ticker"] for p in results] == ["A", "B", "C"]
+        assert calls["n"] == 2
+
+    def test_stops_on_empty_positions_even_with_cursor(self):
+        """Defensive: an empty page should stop pagination even if a
+        (buggy) cursor is still returned, to avoid an infinite loop."""
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/login"):
+                return httpx.Response(200, json={"token": "tok"})
+            return httpx.Response(200, json={"market_positions": [], "cursor": "keeps-going"})
+
+        c = mock_client(handler)
+        results = c.get_all_positions()
+        assert results == []
+
+    def test_returns_empty_list_when_no_market_positions_key(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/login"):
+                return httpx.Response(200, json={"token": "tok"})
+            return httpx.Response(200, json={})
+
+        c = mock_client(handler)
+        assert c.get_all_positions() == []
+
+
 class TestAuthSelection:
     def test_unauthenticated_endpoint_sends_no_auth_header(self):
         captured = {}
