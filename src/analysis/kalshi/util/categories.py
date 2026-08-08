@@ -218,6 +218,9 @@ SUBCATEGORY_PATTERNS = [
     # but must precede "PRES" since it would otherwise shadow them too.
     ("BOLIVIAPRES", "World Events", "Other Events", "Bolivia President"),
     ("SKPRES", "World Events", "Other Events", "South Korea President"),
+    # SECPRESSMENTION is a Cabinet ticker, not Presidential, but must precede
+    # "PRES" since "PRES" is a substring of "secPRESsmention".
+    ("SECPRESSMENTION", "Politics", "Cabinet", "Press Mentions"),
     ("PRES", "Politics", "Presidential", "General"),
     # === POLITICS: Popular Vote ===
     ("POPVOTEMOV", "Politics", "Popular Vote", "Margin"),
@@ -289,7 +292,7 @@ SUBCATEGORY_PATTERNS = [
     ("SECHHS", "Politics", "Cabinet", "Sec HHS"),
     ("SECTREASURY", "Politics", "Cabinet", "Sec Treasury"),
     ("SECSTATE", "Politics", "Cabinet", "Sec State"),
-    ("SECPRESSMENTION", "Politics", "Cabinet", "Press Mentions"),
+    # SECPRESSMENTION is defined earlier (before Presidential "PRES") to avoid being shadowed by it.
     ("DNI", "Politics", "Cabinet", "DNI"),
     ("FBI", "Politics", "Cabinet", "FBI"),
     ("DOED", "Politics", "Cabinet", "Dept of Education"),
