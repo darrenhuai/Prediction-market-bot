@@ -15,6 +15,8 @@ only looks for three things that can actually point to an edge:
 
 from __future__ import annotations
 
+import math
+from statistics import median
 from typing import Any
 
 from src.scanner.markets import is_tradable
@@ -25,12 +27,17 @@ DEFAULT_FEE_RATE = 0.07  # Kalshi's standard taker fee: rate * P * (1 - P) per c
 def taker_fee(price_cents: float, rate: float = DEFAULT_FEE_RATE) -> float:
     """Approximate Kalshi taker fee, in cents, for one contract bought at ``price_cents``.
 
-    Kalshi charges ``ceil(rate * count * P * (1 - P))`` dollars per order, so
-    the real fee on a tiny order is rounded up to the next cent; for sizing
-    decisions the unrounded per-contract figure is the fairer estimate.
+    Kalshi charges ``rate * count * P * (1 - P)`` dollars per order, rounded
+    up to the next cent, so the real fee on a tiny order is a little higher;
+    for sizing decisions the unrounded per-contract figure is the fairer estimate.
     """
     p = price_cents / 100
     return rate * p * (1 - p) * 100
+
+
+def single_contract_fee(price_cents: float, rate: float = DEFAULT_FEE_RATE) -> float:
+    """Kalshi's actual fee, in whole cents, for an order of one contract (the per-order cent is rounded up)."""
+    return float(math.ceil(round(taker_fee(price_cents, rate), 6)))
 
 
 def evaluate_pick(prob: float, market: dict[str, Any], fee_rate: float = DEFAULT_FEE_RATE,
@@ -94,7 +101,12 @@ def find_pick_opportunities(markets_by_ticker: dict[str, dict[str, Any]], estima
 
 def find_arbitrage(events: list[dict[str, Any]], markets_by_ticker: dict[str, dict[str, Any]],
                    fee_rate: float = DEFAULT_FEE_RATE, min_profit_cents: float = 0.5) -> list[dict[str, Any]]:
-    """Look for mutually exclusive events whose outcome bundle is priced below its guaranteed payout."""
+    """Look for mutually exclusive events whose outcome bundle is priced below its guaranteed payout.
+
+    Costs use the fee Kalshi actually charges on a one-contract order (rounded
+    up to the next cent), the worst case: buying more of each only lowers
+    the fee per bundle, so a bundle that profits here profits at any size.
+    """
     opps = []
     for ev in events:
         if not ev.get("mutually_exclusive"):
@@ -105,16 +117,18 @@ def find_arbitrage(events: list[dict[str, Any]], markets_by_ticker: dict[str, di
 
         # Buy NO on every outcome: at most one outcome wins, so at least N-1 NOs pay $1.
         if all(is_tradable(m["no_ask"]) for m in markets):
-            cost = sum(m["no_ask"] + taker_fee(m["no_ask"], fee_rate) for m in markets)
+            cost = sum(m["no_ask"] + single_contract_fee(m["no_ask"], fee_rate) for m in markets)
             payout = (len(markets) - 1) * 100
             if payout - cost >= min_profit_cents:
                 opps.append(_arb(ev, markets, "NO", cost, payout, guaranteed=True))
 
-        # Buy YES on every outcome: pays $1 only if exactly one outcome must win,
-        # which is true when every market in the event is still listed and open.
+        # Buy YES on every outcome: pays $1 if one of the listed outcomes wins, else nothing.
+        # `complete` only rules out a closed market being the winner; Kalshi's
+        # mutually_exclusive flag means "at most one YES", not "exactly one", so an
+        # unlisted outcome can still win. That's why this bundle is never `guaranteed`.
         complete = len(markets) == ev.get("market_count")
         if complete and all(is_tradable(m["yes_ask"]) for m in markets):
-            cost = sum(m["yes_ask"] + taker_fee(m["yes_ask"], fee_rate) for m in markets)
+            cost = sum(m["yes_ask"] + single_contract_fee(m["yes_ask"], fee_rate) for m in markets)
             if 100 - cost >= min_profit_cents:
                 opps.append(_arb(ev, markets, "YES", cost, 100, guaranteed=False))
     return sorted(opps, key=lambda o: o["profit_cents"], reverse=True)
@@ -136,9 +150,19 @@ def _arb(ev, markets, side, cost, payout, guaranteed):
     }
 
 
+LARGE_VS_TYPICAL = 20  # a trade counts as "large" only if it is this many times the market's typical trade
+
+
 def flow_signal(ticker: str, trades: list[dict[str, Any]], large_trade: float = 50,
                 min_trades: int = 10) -> dict[str, Any] | None:
-    """Flag lopsided taker buying (>80% one side) or unusually large single trades."""
+    """Flag a trade far bigger than usual for this market, or lopsided taker buying (>80% one side).
+
+    A trade is "large" if it is at least ``large_trade`` contracts *and* at
+    least 20x the median trade here, so busy markets where 50-lots are
+    routine don't fire on every scan. It is checked first because one huge
+    trade also makes the volume look one-sided, and "one big trade" is the
+    more accurate description of that.
+    """
     if len(trades) < min_trades:
         return None
     yes_vol = sum(t["count"] for t in trades if t["taker_side"] == "yes")
@@ -147,9 +171,11 @@ def flow_signal(ticker: str, trades: list[dict[str, Any]], large_trade: float = 
     if total == 0:
         return None
     yes_share = yes_vol / total
+    typical = median(t["count"] for t in trades)
     biggest = max(trades, key=lambda t: t["count"])
-    if biggest["count"] >= large_trade:
-        reason = f"Large trade: {int(biggest['count']):,} contracts bought on {biggest['taker_side'].upper() or '?'}"
+    if biggest["count"] >= max(large_trade, LARGE_VS_TYPICAL * typical):
+        reason = (f"Large trade: {int(biggest['count']):,} contracts bought on {biggest['taker_side'].upper() or '?'} "
+                  f"(a typical trade here is {typical:,.0f})")
         kind = "large"
     elif yes_share > 0.8:
         reason = f"Heavy YES buying: {yes_share:.0%} of recent volume"

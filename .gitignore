@@ -29,3 +29,4 @@ fig
 output
 .tmp
 *.key
+*.pem

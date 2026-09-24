@@ -31,14 +31,14 @@
 
   <main>
     <section id="tab-opps" class="tab">
-      <p class="lead">Things worth a look right now. Nothing here is a sure thing except where it says <b>locked in</b>. Always check the order book on Kalshi before trading.</p>
+      <p class="lead">Things worth a look right now. Only cards marked <b>Locked in</b> can't lose, and even those depend on buying at the listed prices. Prices move fast, so check them on Kalshi before you trade.</p>
 
       <h2>Your picks with an edge</h2>
-      <p class="hint">Markets where the price is better than the chance <em>you</em> gave them, after fees.</p>
+      <p class="hint">Markets where the price is a good deal compared with the chance <em>you</em> gave them, after fees.</p>
       <div id="opps-picks" class="cards"></div>
 
       <h2>Arbitrage</h2>
-      <p class="hint">Groups of outcomes (only one can happen) where buying every side costs less than it's guaranteed to pay.</p>
+      <p class="hint">Groups of outcomes where only one can happen, priced so that buying all of them costs less than you get back. Your money is tied up until the event ends. Costs assume one contract of each, which has the highest fees per contract.</p>
       <div id="opps-arbitrage" class="cards"></div>
 
       <h2>Unusual activity</h2>
@@ -51,50 +51,51 @@
         <input id="search" type="search" placeholder="Search markets, e.g. Fed, Bitcoin, rain…" aria-label="Search markets">
         <select id="category" aria-label="Category"><option value="">All categories</option></select>
         <select id="sort" aria-label="Sort">
-          <option value="volume_24h">Most traded today</option>
-          <option value="volume">Most traded overall</option>
+          <option value="volume_24h">Most traded (last 24h)</option>
+          <option value="volume">Most traded (all time)</option>
           <option value="close">Closing soonest</option>
           <option value="chance">Highest chance</option>
         </select>
       </div>
-      <p class="hint">Tap a market to enter your own estimate and see whether it's worth buying.</p>
+      <p class="hint"><b>Chance</b> is what the price implies: a contract pays $1 if right, so a 40¢ price means about 40%. Tap a market to enter your own chance and see if it's worth buying.</p>
       <div class="table-head" aria-hidden="true">
-        <span>Market</span><span>Chance</span><span>Buy Yes</span><span>Buy No</span><span>Traded today</span>
+        <span>Market</span><span>Chance</span><span>Buy Yes</span><span>Buy No</span><span>Traded (24h)</span>
       </div>
       <div id="market-list" class="rows"></div>
       <button id="more" class="btn secondary wide" hidden>Show more</button>
     </section>
 
     <section id="tab-picks" class="tab" hidden>
-      <p class="lead">Your saved estimates. The bot checks these on every refresh and alerts you when the price gives you an edge.</p>
+      <p class="lead">Your saved estimates. The app re-checks them on every refresh. Any that are a good buy show up under <b>Opportunities</b>, and in the log or by email if you've set that up.</p>
       <div id="picks-list" class="rows"></div>
     </section>
 
     <section id="tab-settings" class="tab" hidden>
       <form id="settings-form" class="settings">
         <label>Bankroll ($)
-          <input name="bankroll" type="number" min="0" step="1">
-          <small>Used to suggest how much to bet (a quarter of the Kelly amount). Leave at 0 to skip.</small>
+          <input name="bankroll" type="number" min="0" step="any" required>
+          <small>The money you're willing to bet. Used to suggest a stake (a cautious quarter of the "Kelly" amount). Leave at 0 to skip.</small>
         </label>
         <label>Minimum edge (cents per contract)
-          <input name="min_edge_cents" type="number" min="0" step="0.5">
-          <small>Only show picks expected to make at least this much per $1 contract, after fees.</small>
+          <input name="min_edge_cents" type="number" min="0" max="100" step="any" required>
+          <small>Only show picks you'd expect to make at least this much on each $1 contract, after fees.</small>
         </label>
         <label>Refresh every (minutes)
-          <input name="refresh_minutes" type="number" min="1" step="1">
+          <input name="refresh_minutes" type="number" min="1" max="1440" step="any" required>
         </label>
         <label>Large trade size (contracts)
-          <input name="large_trade" type="number" min="1" step="1">
-          <small>A single trade this big shows up under unusual activity.</small>
+          <input name="large_trade" type="number" min="1" step="any" required>
+          <small>A single trade at least this big (and far bigger than usual for that market) shows up under unusual activity.</small>
         </label>
         <label>Only watch these series (optional)
-          <input name="watch_series" type="text" placeholder="e.g. KXFED, KXHIGHNY">
-          <small>Comma-separated Kalshi series tickers. Leave empty to scan everything.</small>
+          <input name="watch_series" type="text" maxlength="500" placeholder="e.g. KXFED, KXHIGHNY">
+          <small>A series is a family of markets, like all Fed decisions. Its code is the first part of a market's ticker, e.g. KXFED. Separate several with commas. Leave empty to scan everything. Markets you have picks on are always kept.</small>
         </label>
         <label>Fee rate
-          <input name="fee_rate" type="number" min="0" step="0.005">
-          <small>Kalshi's standard taker fee is 0.07 (up to 1.75¢ per contract).</small>
+          <input name="fee_rate" type="number" min="0" max="0.5" step="any" required>
+          <small>Kalshi's standard fee rate is 0.07, which works out to at most 1.75¢ per contract. Enter it as a decimal: 0.07, not 7.</small>
         </label>
+        <p class="hint">Settings you save here take priority over the same settings in your .env file.</p>
         <div class="actions"><button class="btn" type="submit">Save settings</button><span id="settings-saved" class="muted"></span></div>
       </form>
     </section>

@@ -47,8 +47,13 @@ def is_tradable(price: float | None) -> bool:
     return price is not None and 0 < price < 100
 
 
-def normalize_market(raw: dict[str, Any], event: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Flatten a raw market (plus its parent event, if known) for scanning and display."""
+def normalize_market(raw: dict[str, Any], event: dict[str, Any] | None = None,
+                     category: str | None = None) -> dict[str, Any]:
+    """Flatten a raw market (plus its parent event, if known) for scanning and display.
+
+    ``category`` comes from the market's series; Kalshi dropped it from markets
+    and deprecated it on events, which are only used as a fallback.
+    """
     event = event or {}
     yes_bid = price_cents(raw, "yes_bid")
     yes_ask = price_cents(raw, "yes_ask")
@@ -72,16 +77,17 @@ def normalize_market(raw: dict[str, Any], event: dict[str, Any] | None = None) -
     outcome = raw.get("yes_sub_title") or raw.get("subtitle") or ""
     title = raw.get("title") or event_title or raw.get("ticker", "")
     if event_title and outcome and len(event.get("markets") or []) > 1:
-        title = f"{event_title}: {outcome}"
+        # "Who wins?: Bills" reads badly, so questions get a dash instead of a colon.
+        title = f"{event_title} — {outcome}" if event_title.endswith(("?", "!", ".")) else f"{event_title}: {outcome}"
 
     status = (raw.get("status") or "").lower()
     return {
         "ticker": raw.get("ticker", ""),
         "event_ticker": raw.get("event_ticker") or event.get("event_ticker", ""),
-        "series_ticker": event.get("series_ticker") or raw.get("series_ticker", ""),
+        "series_ticker": event.get("series_ticker") or raw.get("series_ticker") or "",
         "title": title,
         "outcome": outcome,
-        "category": event.get("category") or raw.get("category") or "Other",
+        "category": category or event.get("category") or raw.get("category") or "Other",
         "status": "open" if status in OPEN_STATUSES else status,
         "yes_bid": yes_bid,
         "yes_ask": yes_ask,
@@ -99,31 +105,40 @@ def normalize_market(raw: dict[str, Any], event: dict[str, Any] | None = None) -
 
 
 def normalize_trade(raw: dict[str, Any]) -> dict[str, Any]:
+    # taker_outcome_side (yes/no) replaced the deprecated taker_side; taker_book_side
+    # says the same thing as bid (bought YES) / ask (bought NO).
+    side = (raw.get("taker_outcome_side") or raw.get("taker_side") or "").lower()
+    if not side:
+        side = {"bid": "yes", "ask": "no"}.get((raw.get("taker_book_side") or "").lower(), "")
     return {
         "ticker": raw.get("ticker", ""),
         "count": quantity(raw, "count"),
         "yes_price": price_cents(raw, "yes_price"),
-        "taker_side": (raw.get("taker_side") or "").lower(),
+        "taker_side": side,
         "created_time": raw.get("created_time") or "",
     }
 
 
-def flatten_events(events: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def flatten_events(events: list[dict[str, Any]], categories: dict[str, str] | None = None,
+                   ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Split ``/events?with_nested_markets=true`` pages into (events, markets).
 
-    The returned events keep only the fields the scanner needs plus the
-    tickers of their open markets, so they stay small enough to cache.
+    ``categories`` maps series ticker to category (from ``/series``). The
+    returned events keep only the fields the scanner needs plus the tickers
+    of their open markets, so they stay small enough to cache.
     """
+    categories = categories or {}
     out_events, out_markets = [], []
     for ev in events:
-        markets = [normalize_market(m, ev) for m in ev.get("markets") or []]
+        category = categories.get(ev.get("series_ticker") or "")
+        markets = [normalize_market(m, ev, category) for m in ev.get("markets") or []]
         open_markets = [m for m in markets if m["status"] == "open"]
         out_markets.extend(open_markets)
         out_events.append({
-            "event_ticker": ev.get("event_ticker", ""),
-            "series_ticker": ev.get("series_ticker", ""),
-            "title": ev.get("title", ""),
-            "category": ev.get("category") or "Other",
+            "event_ticker": ev.get("event_ticker") or "",
+            "series_ticker": ev.get("series_ticker") or "",
+            "title": ev.get("title") or "",
+            "category": category or ev.get("category") or "Other",
             "mutually_exclusive": bool(ev.get("mutually_exclusive")),
             "market_count": len(markets),
             "open_tickers": [m["ticker"] for m in open_markets],

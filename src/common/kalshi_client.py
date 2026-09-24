@@ -20,14 +20,16 @@ RATE_LIMIT_RETRIES = 3
 class KalshiClient:
     """Thin wrapper around the Kalshi trade API.
 
-    Supports two auth modes:
-      - RSA key-pair auth (KALSHI_API_KEY_ID + KALSHI_PRIVATE_KEY_PATH), used
-        when both are configured and the key loads successfully.
-      - Email/password auth (KALSHI_EMAIL + KALSHI_PASSWORD), used as a
-        fallback for endpoints that require auth.
+    Auth modes:
+      - API-key auth (KALSHI_API_KEY_ID + KALSHI_PRIVATE_KEY_PATH), used when
+        both are configured and the key loads. Kalshi issues RSA and Ed25519
+        keys; both are supported.
+      - Email/password (KALSHI_EMAIL + KALSHI_PASSWORD) is legacy: Kalshi's
+        current API has no /login endpoint, so this path only fails. It is
+        kept so old configs get an error instead of a crash.
 
-    All four env vars are optional at construction time; unauthenticated
-    endpoints (e.g. get_markets) work without any credentials.
+    All env vars are optional; public endpoints (markets, events, trades)
+    work without any credentials.
     """
 
     def __init__(self) -> None:
@@ -43,42 +45,57 @@ class KalshiClient:
         if self._private_key_path:
             self._load_key()
 
+    @property
+    def has_auth(self) -> bool:
+        """True when API-key auth is configured, i.e. account endpoints like balance can work."""
+        return bool(self._private_key and self._api_key_id)
+
     def _load_key(self) -> None:
         try:
             from cryptography.hazmat.primitives import serialization
+            from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
             with open(self._private_key_path, "rb") as f:
-                self._private_key = serialization.load_pem_private_key(f.read(), password=None)
+                key = serialization.load_pem_private_key(f.read(), password=None)
+            if isinstance(key, (rsa.RSAPrivateKey, ed25519.Ed25519PrivateKey)):
+                self._private_key = key
+            else:
+                logger.warning("Unsupported key type %s in %s; Kalshi keys are RSA or Ed25519.",
+                               type(key).__name__, self._private_key_path)
         except OSError as e:
             logger.warning("Could not read private key file %s: %s", self._private_key_path, e)
-        except ValueError as e:
-            # Raised by cryptography for malformed/unsupported key data.
-            logger.warning("Could not parse private key %s: %s", self._private_key_path, e)
+        except (ValueError, TypeError) as e:
+            # ValueError: malformed key data. TypeError: the key file is password-protected.
+            logger.warning("Could not load private key %s: %s", self._private_key_path, e)
 
         if self._private_key_path and self._private_key is None:
             logger.warning(
-                "KALSHI_PRIVATE_KEY_PATH is set but no key was loaded; "
-                "falling back to email/password login if credentials are available."
+                "KALSHI_PRIVATE_KEY_PATH is set but no key was loaded, so account "
+                "features (like your balance) are off. Public market data still works."
             )
         if self._private_key and not self._api_key_id:
             logger.warning(
                 "Private key loaded but KALSHI_API_KEY_ID is not set; "
-                "RSA auth headers cannot be built without it."
+                "auth headers cannot be built without it."
             )
 
     def _rsa_auth_headers(self, method: str, path: str) -> dict[str, str]:
+        """Signed auth headers. (Named for RSA, but Ed25519 keys are signed here too.)"""
         import datetime
 
         from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.primitives.asymmetric import padding
+        from cryptography.hazmat.primitives.asymmetric import ed25519, padding
         ts = str(int(datetime.datetime.now().timestamp() * 1000))
         msg_parts = ts + method.upper() + path
         msg = msg_parts.encode("utf-8")
-        # Kalshi verifies RSA-PSS (SHA-256, digest-length salt) signatures.
-        sig = self._private_key.sign(
-            msg,
-            padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.DIGEST_LENGTH),
-            hashes.SHA256(),
-        )
+        if isinstance(self._private_key, ed25519.Ed25519PrivateKey):
+            sig = self._private_key.sign(msg)
+        else:
+            # Kalshi verifies RSA-PSS (SHA-256, digest-length salt) signatures.
+            sig = self._private_key.sign(
+                msg,
+                padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.DIGEST_LENGTH),
+                hashes.SHA256(),
+            )
         sig_b64 = base64.b64encode(sig).decode("utf-8")
         return {
             "KALSHI-ACCESS-KEY": self._api_key_id,
@@ -168,16 +185,27 @@ class KalshiClient:
         return self._get("/events", params=params)
 
     def get_all_events(self, status: str = "open", max_pages: int = 50) -> list[dict[str, Any]]:
-        """Page through get_events() (with nested markets), stopping after ``max_pages``."""
+        """Page through get_events() (with nested markets), stopping after ``max_pages``.
+
+        Sets ``self.events_truncated`` when it stopped early with more pages left.
+        """
         results, cursor = [], None
-        for _ in range(max_pages):
+        self.events_truncated = False
+        for page in range(max_pages):
             resp = self.get_events(status=status, cursor=cursor)
             events = resp.get("events") or []
             results.extend(events)
             cursor = resp.get("cursor")
             if not cursor or not events:
                 break
+            if page == max_pages - 1:
+                self.events_truncated = True
+                logger.warning("Stopped after %d pages of events; more are available.", max_pages)
         return results
+
+    def get_series_list(self) -> list[dict[str, Any]]:
+        """Every series (one call); each has the ``category`` that events no longer carry."""
+        return self._get("/series").get("series") or []
 
     def get_market(self, ticker: str) -> dict[str, Any]:
         return self._get(f"/markets/{ticker}")

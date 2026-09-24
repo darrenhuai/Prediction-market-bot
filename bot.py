@@ -4,8 +4,9 @@
     uv run bot.py --once     # one scan, then exit
     uv run bot.py --demo     # use made-up data (no network or account needed)
 
-Add your own probability estimates in the web app (uv run app.py) - the bot
-reads the same data/ files and alerts when a price gives you an edge.
+Add your own probability estimates in the web app (uv run app.py). The bot
+re-reads the same data/ files on every scan and alerts when a price gives you
+an edge. Settings come from .env unless you've changed them in the web app.
 """
 
 import argparse
@@ -19,7 +20,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.scanner.alerts import describe  # noqa: E402
-from src.scanner.service import Scanner  # noqa: E402
+from src.scanner.service import SETTING_BOUNDS, Scanner, validate_setting  # noqa: E402
 
 log = logging.getLogger("kalshi-bot")
 
@@ -67,8 +68,13 @@ def main() -> None:
     setup_logging()
     scanner = make_scanner(args.demo)
     if args.min_ev is not None:
-        scanner.settings["min_edge_cents"] = args.min_ev * 100
-    interval = args.interval or int(scanner.settings["refresh_minutes"] * 60)
+        try:
+            scanner.overrides["min_edge_cents"] = validate_setting("min_edge_cents", args.min_ev * 100)
+        except ValueError as e:
+            parser.error(f"--min-ev: {e}")
+        scanner.reload()
+    max_interval = int(SETTING_BOUNDS["refresh_minutes"][1] * 60)
+    interval = min(max(1, args.interval or int(scanner.settings["refresh_minutes"] * 60)), max_interval)
     s = scanner.settings
     log.info("Kalshi bot starting (%s) | every %ds | min edge %.1fc | %d pick(s) saved",
              scanner.mode, interval, s["min_edge_cents"], len(scanner.estimates))

@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import smtplib
+import tempfile
 import time
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -21,17 +22,21 @@ def describe(opp: dict[str, Any]) -> tuple[str, str]:
     """Plain-English (title, body) for an opportunity."""
     if opp["kind"] == "pick":
         return (
-            f"+EV pick: buy {opp['side']} on {opp['ticker']}",
+            f"Good price on your pick: buy {opp['side']} on {opp['ticker']}",
             f"{opp['title']}\nBuy {opp['side']} at {opp['price']:g}c. You estimate YES at {opp['your_chance']}%, "
             f"the market says {opp['market_chance']}%. Expected profit: +{opp['ev_cents']:.1f}c per contract after fees.",
         )
     if opp["kind"] == "arbitrage":
         legs = ", ".join(f"{leg['outcome']} @ {leg['price']:g}c" for leg in opp["legs"])
-        note = "Locked in." if opp["guaranteed"] else "Only locked in if one of these outcomes must happen."
+        if opp["guaranteed"]:
+            payout = f"pays at least {opp['payout_cents']}c whatever happens: +{opp['profit_cents']:.1f}c per set."
+        else:
+            payout = (f"pays {opp['payout_cents']}c if one of these outcomes wins, nothing otherwise: "
+                      f"+{opp['profit_cents']:.1f}c per set if it does.")
         return (
             f"Arbitrage: {opp['event_ticker']}",
-            f"{opp['title']}\nBuy {opp['side']} on every outcome ({legs}). Cost {opp['cost_cents']:.1f}c incl. fees, "
-            f"pays at least {opp['payout_cents']}c: +{opp['profit_cents']:.1f}c per bundle. {note}",
+            f"{opp['title']}\nBuy {opp['side']} on every outcome, one of each ({legs}). "
+            f"Costs {opp['cost_cents']:.0f}c with fees and {payout}",
         )
     return (f"Unusual activity: {opp['ticker']}", f"{opp.get('title', opp['ticker'])}\n{opp['reason']}")
 
@@ -41,16 +46,24 @@ def _score(opp: dict[str, Any]) -> float:
 
 
 class Alerter:
+    """Remembers what it already alerted on in a JSON file shared by the bot and the web app."""
+
     def __init__(self, state_path: Path):
         self.state_path = state_path
+        self.seen: dict[str, dict[str, float]] = self._read()
+
+    def _read(self) -> dict[str, dict[str, float]]:
         try:
-            self.seen: dict[str, dict[str, float]] = json.loads(state_path.read_text())
+            seen = json.loads(self.state_path.read_text())
+            return seen if isinstance(seen, dict) else {}
         except (OSError, ValueError):
-            self.seen = {}
+            return {}
 
     def new_alerts(self, opportunities: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Return opportunities worth alerting on now and remember them."""
         fresh, now = [], time.time()
+        # Re-read first: if the bot and the web app both run, the other may have just alerted.
+        self.seen = {k: v for k, v in self._read().items() if now - v.get("at", 0) < 7 * 24 * 3600}
         for opp in opportunities:
             prev = self.seen.get(opp["key"])
             if prev and now - prev["at"] < REALERT_AFTER_SECONDS and _score(opp) < prev["score"] + REALERT_IMPROVEMENT_CENTS:
@@ -58,7 +71,10 @@ class Alerter:
             fresh.append(opp)
             self.seen[opp["key"]] = {"at": now, "score": _score(opp)}
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        self.state_path.write_text(json.dumps(self.seen, indent=2))
+        fd, tmp = tempfile.mkstemp(dir=self.state_path.parent, prefix=".alert_state-", suffix=".tmp")
+        with os.fdopen(fd, "w") as f:
+            json.dump(self.seen, f, indent=1)
+        os.replace(tmp, self.state_path)
         return fresh
 
     def send(self, opportunities: list[dict[str, Any]]) -> None:

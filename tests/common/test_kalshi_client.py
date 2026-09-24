@@ -248,3 +248,57 @@ class TestRsaSignature:
             padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.DIGEST_LENGTH),
             hashes.SHA256(),
         )
+
+
+class TestKeyTypes:
+    def _write_key(self, tmp_path, key, password=None):
+        from cryptography.hazmat.primitives import serialization
+
+        enc = serialization.BestAvailableEncryption(password) if password else serialization.NoEncryption()
+        pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, enc)
+        path = tmp_path / "kalshi.pem"
+        path.write_bytes(pem)
+        return str(path)
+
+    def test_ed25519_key_signs_requests(self, tmp_path, monkeypatch):
+        import base64
+
+        from cryptography.hazmat.primitives.asymmetric import ed25519
+
+        key = ed25519.Ed25519PrivateKey.generate()
+        monkeypatch.setenv("KALSHI_PRIVATE_KEY_PATH", self._write_key(tmp_path, key))
+        monkeypatch.setenv("KALSHI_API_KEY_ID", "key-id")
+        c = KalshiClient()
+        assert c.has_auth
+        headers = c._rsa_auth_headers("GET", "/trade-api/v2/portfolio/balance")
+        msg = (headers["KALSHI-ACCESS-TIMESTAMP"] + "GET/trade-api/v2/portfolio/balance").encode()
+        key.public_key().verify(base64.b64decode(headers["KALSHI-ACCESS-SIGNATURE"]), msg)
+
+    def test_password_protected_key_does_not_crash_startup(self, tmp_path, monkeypatch):
+        from cryptography.hazmat.primitives.asymmetric import rsa
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        monkeypatch.setenv("KALSHI_PRIVATE_KEY_PATH", self._write_key(tmp_path, key, b"secret"))
+        monkeypatch.setenv("KALSHI_API_KEY_ID", "key-id")
+        assert not KalshiClient().has_auth
+
+    def test_no_key_means_no_auth(self):
+        assert not KalshiClient().has_auth
+
+
+class TestEventsTruncation:
+    def test_flags_when_more_pages_remain(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"events": [{"event_ticker": "X"}], "cursor": "more"})
+
+        c = mock_client(handler)
+        c.get_all_events(max_pages=2)
+        assert c.events_truncated
+
+    def test_not_flagged_when_all_pages_read(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"events": [{"event_ticker": "X"}], "cursor": ""})
+
+        c = mock_client(handler)
+        c.get_all_events(max_pages=2)
+        assert not c.events_truncated
