@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prediction Market Bot</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232459d6'/%3E%3Cpath d='M7 22l6-7 5 4 7-9' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Prediction Market Bot</h1>
+      <span id="mode" class="badge" hidden>Demo data</span>
+    </div>
+    <div class="status">
+      <span id="balance" class="muted"></span>
+      <span id="updated" class="muted">Loading…</span>
+      <button id="refresh" class="btn">Refresh</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="opps" aria-selected="true">Opportunities <span id="count-opps" class="count"></span></button>
+    <button role="tab" data-tab="markets">Markets <span id="count-markets" class="count"></span></button>
+    <button role="tab" data-tab="picks">My picks <span id="count-picks" class="count"></span></button>
+    <button role="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <div id="error" class="notice error" hidden></div>
+
+  <main>
+    <section id="tab-opps" class="tab">
+      <p class="lead">Things worth a look right now. Only cards marked <b>Locked in</b> can't lose, and even those depend on buying at the listed prices. Prices move fast, so check them on Kalshi before you trade.</p>
+
+      <h2>Your picks with an edge</h2>
+      <p class="hint">Markets where the price is a good deal compared with the chance <em>you</em> gave them, after fees.</p>
+      <div id="opps-picks" class="cards"></div>
+
+      <h2>Arbitrage</h2>
+      <p class="hint">Groups of outcomes where only one can happen, priced so that buying all of them costs less than you get back. Your money is tied up until the event ends. Costs assume one contract of each, which has the highest fees per contract.</p>
+      <div id="opps-arbitrage" class="cards"></div>
+
+      <h2>Unusual activity</h2>
+      <p class="hint">The busiest markets where recent buying is very one-sided, or someone placed a very large trade.</p>
+      <div id="opps-flow" class="cards"></div>
+    </section>
+
+    <section id="tab-markets" class="tab" hidden>
+      <div class="filters">
+        <input id="search" type="search" placeholder="Search markets, e.g. Fed, Bitcoin, rain…" aria-label="Search markets">
+        <select id="category" aria-label="Category"><option value="">All categories</option></select>
+        <select id="sort" aria-label="Sort">
+          <option value="volume_24h">Most traded (last 24h)</option>
+          <option value="volume">Most traded (all time)</option>
+          <option value="close">Closing soonest</option>
+          <option value="chance">Highest chance</option>
+        </select>
+      </div>
+      <p class="hint"><b>Chance</b> is what the price implies: a contract pays $1 if right, so a 40¢ price means about 40%. Tap a market to enter your own chance and see if it's worth buying.</p>
+      <div class="table-head" aria-hidden="true">
+        <span>Market</span><span>Chance</span><span>Buy Yes</span><span>Buy No</span><span>Traded (24h)</span>
+      </div>
+      <div id="market-list" class="rows"></div>
+      <button id="more" class="btn secondary wide" hidden>Show more</button>
+    </section>
+
+    <section id="tab-picks" class="tab" hidden>
+      <p class="lead">Your saved estimates. The app re-checks them on every refresh. Any that are a good buy show up under <b>Opportunities</b>, and in the log or by email if you've set that up.</p>
+      <div id="picks-list" class="rows"></div>
+    </section>
+
+    <section id="tab-settings" class="tab" hidden>
+      <form id="settings-form" class="settings">
+        <label>Bankroll ($)
+          <input name="bankroll" type="number" min="0" step="any" required>
+          <small>The money you're willing to bet. Used to suggest a stake (a cautious quarter of the "Kelly" amount). Leave at 0 to skip.</small>
+        </label>
+        <label>Minimum edge (cents per contract)
+          <input name="min_edge_cents" type="number" min="0" max="100" step="any" required>
+          <small>Only show picks you'd expect to make at least this much on each $1 contract, after fees.</small>
+        </label>
+        <label>Refresh every (minutes)
+          <input name="refresh_minutes" type="number" min="1" max="1440" step="any" required>
+        </label>
+        <label>Large trade size (contracts)
+          <input name="large_trade" type="number" min="1" step="any" required>
+          <small>A single trade at least this big (and far bigger than usual for that market) shows up under unusual activity.</small>
+        </label>
+        <label>Only watch these series (optional)
+          <input name="watch_series" type="text" maxlength="500" placeholder="e.g. KXFED, KXHIGHNY">
+          <small>A series is a family of markets, like all Fed decisions. Its code is the first part of a market's ticker, e.g. KXFED. Separate several with commas. Leave empty to scan everything. Markets you have picks on are always kept.</small>
+        </label>
+        <label>Fee rate
+          <input name="fee_rate" type="number" min="0" max="0.5" step="any" required>
+          <small>Kalshi's standard fee rate is 0.07, which works out to at most 1.75¢ per contract. Enter it as a decimal: 0.07, not 7.</small>
+        </label>
+        <p class="hint">Settings you save here take priority over the same settings in your .env file.</p>
+        <div class="actions"><button class="btn" type="submit">Save settings</button><span id="settings-saved" class="muted"></span></div>
+      </form>
+    </section>
+  </main>
+
+  <footer class="muted">For research only. This app never places trades. Prices can move fast, and big orders may not fill at the listed price.</footer>
+
+  <dialog id="market-dialog">
+    <form method="dialog" class="dialog-close"><button class="icon-btn" aria-label="Close">✕</button></form>
+    <div id="dialog-body"></div>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
