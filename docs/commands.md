@@ -1,6 +1,17 @@
 # Commands
 
-The project currently exposes commands through `main.py`.
+## Web app and live scanner
+
+```bash
+uv run app.py [--demo] [--host 0.0.0.0] [--port 8000] [--open]
+uv run bot.py [--demo] [--once] [--list] [--interval SECONDS] [--min-ev DOLLARS]
+```
+
+`app.py` serves the UI in `web/`, and `bot.py` runs the same scanner (`src/scanner/`) without a UI.
+
+## Research CLI
+
+The research tools are run through `main.py`.
 
 ## Analyze
 

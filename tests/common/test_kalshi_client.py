@@ -193,3 +193,58 @@ class TestCreateOrder:
         assert captured["json"]["yes_price"] == 55
         assert "no_price" not in captured["json"]
         assert "client_order_id" in captured["json"]
+
+
+class TestGetEvents:
+    def test_requests_nested_markets_and_pages_through(self):
+        pages = {None: {"events": [{"event_ticker": "A"}], "cursor": "c2"},
+                 "c2": {"events": [{"event_ticker": "B"}], "cursor": ""}}
+        seen = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            params = dict(request.url.params)
+            seen.append(params)
+            return httpx.Response(200, json=pages[params.get("cursor")])
+
+        events = mock_client(handler).get_all_events()
+        assert [e["event_ticker"] for e in events] == ["A", "B"]
+        assert seen[0]["with_nested_markets"] == "true"
+
+    def test_stops_at_max_pages(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"events": [{"event_ticker": "X"}], "cursor": "more"})
+
+        assert len(mock_client(handler).get_all_events(max_pages=3)) == 3
+
+
+class TestRateLimitRetry:
+    def test_retries_after_429(self, monkeypatch):
+        monkeypatch.setattr("src.common.kalshi_client.time.sleep", lambda s: None)
+        calls = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(1)
+            if len(calls) == 1:
+                return httpx.Response(429, headers={"Retry-After": "0"})
+            return httpx.Response(200, json={"markets": []})
+
+        assert mock_client(handler).get_markets() == {"markets": []}
+        assert len(calls) == 2
+
+
+class TestRsaSignature:
+    def test_signature_is_rsa_pss_over_timestamp_method_path(self):
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        c = KalshiClient()
+        c._private_key, c._api_key_id = key, "key-id"
+        headers = c._rsa_auth_headers("GET", "/trade-api/v2/portfolio/balance")
+        msg = (headers["KALSHI-ACCESS-TIMESTAMP"] + "GET/trade-api/v2/portfolio/balance").encode()
+        import base64
+        key.public_key().verify(  # raises InvalidSignature if the scheme is wrong
+            base64.b64decode(headers["KALSHI-ACCESS-SIGNATURE"]), msg,
+            padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.DIGEST_LENGTH),
+            hashes.SHA256(),
+        )

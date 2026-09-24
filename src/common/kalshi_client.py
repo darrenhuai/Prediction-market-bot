@@ -13,7 +13,9 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = os.getenv("KALSHI_BASE_URL", "https://trading-api.kalshi.com/trade-api/v2")
+# trading-api.kalshi.com is the retired host; all markets are served from here now.
+BASE_URL = os.getenv("KALSHI_BASE_URL", "https://api.elections.kalshi.com/trade-api/v2")
+RATE_LIMIT_RETRIES = 3
 
 class KalshiClient:
     """Thin wrapper around the Kalshi trade API.
@@ -71,7 +73,12 @@ class KalshiClient:
         ts = str(int(datetime.datetime.now().timestamp() * 1000))
         msg_parts = ts + method.upper() + path
         msg = msg_parts.encode("utf-8")
-        sig = self._private_key.sign(msg, padding.PKCS1v15(), hashes.SHA256())
+        # Kalshi verifies RSA-PSS (SHA-256, digest-length salt) signatures.
+        sig = self._private_key.sign(
+            msg,
+            padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.DIGEST_LENGTH),
+            hashes.SHA256(),
+        )
         sig_b64 = base64.b64encode(sig).decode("utf-8")
         return {
             "KALSHI-ACCESS-KEY": self._api_key_id,
@@ -96,6 +103,12 @@ class KalshiClient:
         else:
             headers = {}
         resp = self._session.get(path, params=params, headers=headers)
+        # Back off briefly on rate limiting instead of failing the whole scan.
+        for attempt in range(RATE_LIMIT_RETRIES):
+            if resp.status_code != 429:
+                break
+            time.sleep(float(resp.headers.get("Retry-After") or 2 ** attempt))
+            resp = self._session.get(path, params=params, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
@@ -137,6 +150,32 @@ class KalshiClient:
             results.extend(markets)
             cursor = resp.get("cursor")
             if not cursor or not markets:
+                break
+        return results
+
+    def get_events(
+        self,
+        status: str = "open",
+        limit: int = 200,
+        cursor: str | None = None,
+        with_nested_markets: bool = True,
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {"status": status, "limit": limit}
+        if with_nested_markets:
+            params["with_nested_markets"] = "true"
+        if cursor:
+            params["cursor"] = cursor
+        return self._get("/events", params=params)
+
+    def get_all_events(self, status: str = "open", max_pages: int = 50) -> list[dict[str, Any]]:
+        """Page through get_events() (with nested markets), stopping after ``max_pages``."""
+        results, cursor = [], None
+        for _ in range(max_pages):
+            resp = self.get_events(status=status, cursor=cursor)
+            events = resp.get("events") or []
+            results.extend(events)
+            cursor = resp.get("cursor")
+            if not cursor or not events:
                 break
         return results
 
