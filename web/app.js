@@ -144,16 +144,14 @@ function renderOpps() {
   $("#opps-arbitrage").innerHTML = arbitrage.length
     ? arbitrage.map((o) => `
       <div class="card">
-        <span class="tag ${o.guaranteed ? "good" : "warn"}">${o.guaranteed ? "Locked in" : "Not guaranteed"}</span>
+        <span class="tag good">Locked in</span>
         <h3>${esc(o.title)}</h3>
-        <p class="big ${o.guaranteed ? "good" : ""}">${signed(o.profit_cents)} <small>per set${o.guaranteed ? "" : ", if it pays"}</small></p>
-        <p>Buy <b>${o.side}</b> on all ${o.legs.length} outcomes, one of each, for ${cents(o.cost_cents)} with fees.
-        ${o.guaranteed
-          ? `Only one outcome can happen, so at least ${o.legs.length - 1} of them pay $1: you get back at least ${cents(o.payout_cents)} whatever happens.`
-          : `Pays ${cents(o.payout_cents)} if one of these outcomes wins, but <b>nothing</b> if something not on this list happens.`}</p>
-        <ul class="legs">${o.legs.map((l) => `<li>${esc(l.outcome)}: ${cents(l.price)}</li>`).join("")}</ul>
+        <p class="big good">${signed(o.profit_cents)} <small>per set</small></p>
+        <p>Buy <b>NO</b> on all ${o.legs.length} outcomes, one of each, for ${cents(o.cost_cents)} with fees.
+        Only one outcome can happen, so at least ${o.legs.length - 1} of them pay $1: you get back at least ${cents(o.payout_cents)} whatever happens.</p>
+        <ul class="legs">${o.legs.map((l) => `<li>${esc(l.outcome)}: NO at ${cents(l.price)}</li>`).join("")}</ul>
       </div>`).join("")
-    : empty("None right now. These are rare and usually disappear within minutes.");
+    : empty("None right now. Real locked-in arbitrage is rare and usually disappears within minutes; the app keeps checking on every refresh.");
 
   $("#opps-flow").innerHTML = flow.length
     ? flow.map((o) => `
@@ -354,7 +352,7 @@ form.addEventListener("submit", async (e) => {
   const msg = $("#settings-saved");
   // Send only what changed, so settings you never touched keep following .env.
   const changes = {};
-  for (const name of ["bankroll", "min_edge_cents", "refresh_minutes", "large_trade", "fee_rate"]) {
+  for (const name of ["bankroll", "min_edge_cents", "refresh_minutes", "large_trade", "fee_rate", "max_event_pages"]) {
     const v = f[name].valueAsNumber;
     if (!Number.isFinite(v)) { msg.textContent = "Please fill in every number."; return; }
     if (v !== state.settings[name]) changes[name] = v;

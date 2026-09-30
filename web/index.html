@@ -38,7 +38,7 @@
       <div id="opps-picks" class="cards"></div>
 
       <h2>Arbitrage</h2>
-      <p class="hint">Groups of outcomes where only one can happen, priced so that buying all of them costs less than you get back. Your money is tied up until the event ends. Costs assume one contract of each, which has the highest fees per contract.</p>
+      <p class="hint">Groups of outcomes where only one can happen, priced so that buying NO on all of them costs less than it must pay back. These can't lose if you get the listed prices, but your money is tied up until the event ends, and they are rare. Costs assume one contract of each, which has the highest fees per contract.</p>
       <div id="opps-arbitrage" class="cards"></div>
 
       <h2>Unusual activity</h2>
@@ -90,6 +90,10 @@
         <label>Only watch these series (optional)
           <input name="watch_series" type="text" maxlength="500" placeholder="e.g. KXFED, KXHIGHNY">
           <small>A series is a family of markets, like all Fed decisions. Its code is the first part of a market's ticker, e.g. KXFED. Separate several with commas. Leave empty to scan everything. Markets you have picks on are always kept.</small>
+        </label>
+        <label>Pages of markets to load
+          <input name="max_event_pages" type="number" min="1" max="500" step="1" required>
+          <small>Kalshi sends markets in pages of about 200 events. Raise this if the top of the page says not all markets were loaded; each page takes about a quarter of a second.</small>
         </label>
         <label>Fee rate
           <input name="fee_rate" type="number" min="0" max="0.5" step="any" required>

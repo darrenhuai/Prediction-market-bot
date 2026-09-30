@@ -9,7 +9,8 @@ only looks for three things that can actually point to an edge:
   value after fees.
 * **Arbitrage** - in an event whose outcomes are mutually exclusive (at most
   one can happen), buying NO on every outcome pays at least ``N - 1`` dollars.
-  If the whole bundle costs less than that, the profit is locked in.
+  If the whole bundle costs less than that, the profit is locked in. This is
+  the only kind reported, because it is the only kind that cannot lose.
 * **Unusual activity** - heavy one-sided taker buying or very large trades.
 """
 
@@ -101,7 +102,7 @@ def find_pick_opportunities(markets_by_ticker: dict[str, dict[str, Any]], estima
 
 def find_arbitrage(events: list[dict[str, Any]], markets_by_ticker: dict[str, dict[str, Any]],
                    fee_rate: float = DEFAULT_FEE_RATE, min_profit_cents: float = 0.5) -> list[dict[str, Any]]:
-    """Look for mutually exclusive events whose outcome bundle is priced below its guaranteed payout.
+    """Look for mutually exclusive events where buying NO on every outcome costs less than it must pay.
 
     Costs use the fee Kalshi actually charges on a one-contract order (rounded
     up to the next cent), the worst case: buying more of each only lowers
@@ -122,15 +123,10 @@ def find_arbitrage(events: list[dict[str, Any]], markets_by_ticker: dict[str, di
             if payout - cost >= min_profit_cents:
                 opps.append(_arb(ev, markets, "NO", cost, payout, guaranteed=True))
 
-        # Buy YES on every outcome: pays $1 if one of the listed outcomes wins, else nothing.
-        # `complete` only rules out a closed market being the winner; Kalshi's
-        # mutually_exclusive flag means "at most one YES", not "exactly one", so an
-        # unlisted outcome can still win. That's why this bundle is never `guaranteed`.
-        complete = len(markets) == ev.get("market_count")
-        if complete and all(is_tradable(m["yes_ask"]) for m in markets):
-            cost = sum(m["yes_ask"] + single_contract_fee(m["yes_ask"], fee_rate) for m in markets)
-            if 100 - cost >= min_profit_cents:
-                opps.append(_arb(ev, markets, "YES", cost, 100, guaranteed=False))
+        # Buying YES on every outcome is deliberately not offered: Kalshi's
+        # mutually_exclusive flag means "at most one YES", not "exactly one", so
+        # an unlisted outcome can win and the whole set pays nothing. On live
+        # data that produced dozens of cheap, worthless "arbitrages".
     return sorted(opps, key=lambda o: o["profit_cents"], reverse=True)
 
 

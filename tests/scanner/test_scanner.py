@@ -120,11 +120,14 @@ class TestSignals:
         events, by_ticker = self._event([(35, 36), (35, 36), (35.5, 36.5)])
         assert find_arbitrage(events, by_ticker) == []
 
-    def test_yes_bundle_is_never_guaranteed(self):
-        # Asks sum to 93c: cheap, but an unlisted outcome could still win.
+    def test_cheap_yes_bundles_are_not_reported(self):
+        # Asks sum to 93c: looks cheap, but an unlisted outcome could win and pay nothing.
         events, by_ticker = self._event([(30, 31), (30, 31), (30, 31)])
-        opps = find_arbitrage(events, by_ticker)
-        assert [o["side"] for o in opps] == ["YES"] and not opps[0]["guaranteed"]
+        assert find_arbitrage(events, by_ticker) == []
+
+    def test_every_reported_arbitrage_is_guaranteed(self):
+        events, by_ticker = self._event([(15, 17), (30, 32), (35, 37), (22, 24), (14, 16)])
+        assert all(o["guaranteed"] and o["side"] == "NO" for o in find_arbitrage(events, by_ticker))
 
     def test_no_arbitrage_in_fairly_priced_event(self):
         events, by_ticker = self._event([(30, 32), (30, 32), (36, 38)])

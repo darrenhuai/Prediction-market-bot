@@ -20,7 +20,7 @@ The app has four tabs:
 
 - **Opportunities**: things worth a look right now, in plain English.
   - *Your picks with an edge*: markets where the price beats the chance **you** gave them, after Kalshi's fees.
-  - *Arbitrage*: groups of outcomes where only one can happen, priced so buying all of them costs less than you get back. Only ones marked **Locked in** can't lose.
+  - *Arbitrage*: groups of outcomes where only one can happen, priced so buying NO on all of them costs less than it must pay back. These can't lose at the listed prices, but they are rare and vanish fast.
   - *Unusual activity*: very one-sided buying or very large trades in the busiest markets.
 - **Markets**: search every open Kalshi market. Tap one, enter the chance you think it has, and the app shows the expected profit or loss for buying YES or NO, plus a suggested stake.
 - **My picks**: the estimates you've saved. They're re-checked on every refresh.

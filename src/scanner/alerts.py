@@ -84,9 +84,13 @@ class Alerter:
             send_email("[Kalshi Bot] " + title, body)
 
 
+_email_broken = False  # set after a login failure so one bad password doesn't slow every scan
+
+
 def send_email(subject: str, body: str) -> None:
+    global _email_broken
     to, sender, password = (os.getenv(k, "") for k in ("ALERT_EMAIL_TO", "ALERT_EMAIL_FROM", "ALERT_EMAIL_PASSWORD"))
-    if not (to and sender and password):
+    if not (to and sender and password) or _email_broken:
         return
     try:
         msg = MIMEText(body)
@@ -97,5 +101,10 @@ def send_email(subject: str, body: str) -> None:
             s.login(sender, password)
             s.sendmail(sender, [to], msg.as_string())
         log.info("Email sent to %s", to)
+    except smtplib.SMTPAuthenticationError:
+        _email_broken = True
+        log.warning("Email alerts are off: %s rejected the password for %s. For Gmail you need an "
+                    "'app password' (Google Account -> Security -> 2-Step Verification -> App passwords), "
+                    "not your normal password. Fix ALERT_EMAIL_PASSWORD in .env and restart.", host, sender)
     except Exception as e:  # never let email trouble stop a scan
         log.warning("Email failed: %s", e)

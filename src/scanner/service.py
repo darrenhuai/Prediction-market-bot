@@ -42,7 +42,7 @@ def default_settings() -> dict[str, Any]:
         "refresh_minutes": max(1.0, _env_float("BOT_INTERVAL_SECONDS", 300) / 60),
         "large_trade": _env_float("LARGE_TRADE_THRESHOLD", 50),
         "flow_markets": 10,
-        "max_event_pages": 50,
+        "max_event_pages": 150,
         "watch_series": os.getenv("WATCH_SERIES", ""),
     }
 
