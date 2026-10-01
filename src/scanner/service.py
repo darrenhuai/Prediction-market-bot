@@ -22,6 +22,7 @@ import httpx
 from src.scanner.alerts import Alerter
 from src.scanner.markets import flatten_events, normalize_trade
 from src.scanner.signals import find_arbitrage, find_pick_opportunities, flow_signal
+from src.scanner.trader import MODES, Trader, live_trading_allowed
 
 log = logging.getLogger("kalshi-bot")
 
@@ -44,6 +45,11 @@ def default_settings() -> dict[str, Any]:
         "flow_markets": 10,
         "max_event_pages": 150,
         "watch_series": os.getenv("WATCH_SERIES", ""),
+        # Automatic trading. Off unless you turn it on; see src/scanner/trader.py.
+        "auto_trade": "off",
+        "trade_fraction": 0.01,      # the 1% rule: risk 1% of your balance per trade
+        "max_daily_fraction": 0.10,  # stop for the day after spending 10% of your balance
+        "max_trades_per_day": 20,
     }
 
 
@@ -57,6 +63,9 @@ SETTING_BOUNDS: dict[str, tuple[float, float]] = {
     "large_trade": (1, 1e9),
     "flow_markets": (0, 100),
     "max_event_pages": (1, 500),
+    "trade_fraction": (0.001, 0.05),
+    "max_daily_fraction": (0.01, 0.5),
+    "max_trades_per_day": (1, 200),
 }
 MAX_TEXT_SETTING = 500
 
@@ -66,6 +75,11 @@ def validate_setting(key: str, value: Any) -> Any:
     if key not in SETTING_TYPES:
         raise ValueError(f"Unknown setting: {key}")
     kind = SETTING_TYPES[key]
+    if key == "auto_trade":
+        value = str(value).strip().lower()
+        if value not in MODES:
+            raise ValueError("auto_trade must be off, paper or live")
+        return value
     if kind is str:
         value = str(value)
         if len(value) > MAX_TEXT_SETTING:
@@ -107,6 +121,7 @@ class Scanner:
         prefix = "demo_" if mode == "demo" else ""
         self._paths = {name: data_dir / f"{prefix}{name}.json" for name in ("settings", "estimates", "snapshot")}
         self.alerter = Alerter(data_dir / f"{prefix}alert_state.json")
+        self.trader = Trader(source, data_dir / f"{prefix}trades.json")
         self._lock = threading.RLock()
         self._refreshing = threading.Lock()
         # Values set at runtime that beat saved settings, e.g. bot.py --min-ev.
@@ -282,6 +297,14 @@ class Scanner:
             self._save("settings", saved)
         self.reload()
 
+    def trade(self) -> list[dict[str, Any]]:
+        """Run the auto-trader on the current opportunities (does nothing when auto_trade is off)."""
+        with self._lock:
+            opps = self.opportunities()
+            settings = dict(self.settings)
+            balance = self.snapshot.get("balance")
+        return self.trader.run(opps, settings, balance)
+
     def market(self, ticker: str) -> dict[str, Any] | None:
         with self._lock:
             return self.by_ticker.get(ticker)
@@ -306,6 +329,8 @@ class Scanner:
                 "market_count": len(self.snapshot.get("markets", [])),
                 "settings": self.settings,
                 "saved_settings": sorted(self._saved_settings),
+                "live_trading_allowed": live_trading_allowed(),
+                "trades": list(reversed(self.trader.ledger[-200:])),
                 "estimates": {t: round(p * 100, 2) for t, p in self.estimates.items()},
                 "opportunities": self.opportunities(),
             }

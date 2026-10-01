@@ -52,6 +52,7 @@ def run_pass(scanner: Scanner) -> None:
     log.info("Found %d pick(s), %d arbitrage, %d unusual activity",
              len(opps["picks"]), len(opps["arbitrage"]), len(opps["flow"]))
     scanner.alerter.send(scanner.all_opportunities())
+    scanner.trade()
     if scanner.snapshot.get("balance") is not None:
         log.info("Balance: $%.2f", scanner.snapshot["balance"])
 

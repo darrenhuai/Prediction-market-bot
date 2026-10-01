@@ -98,10 +98,34 @@ function render() {
   renderMarkets();
   renderPicks();
   renderSettings();
+  renderTrades();
+}
+
+function renderTrades() {
+  const trades = state.trades || [];
+  $("#count-trades").textContent = trades.length || "";
+  const mode = state.settings.auto_trade || "off";
+  $("#trades-list").innerHTML = trades.length
+    ? trades.map((t) => `
+      <div class="row trade-row">
+        <span>
+          <span class="tag ${t.mode === "live" ? "warn" : ""}">${t.mode === "live" ? "LIVE" : "Paper"}</span>
+          <span class="name">${esc(t.title)}</span><br>
+          <span class="sub">${esc(t.kind)} · ${relTime(t.time)} · ${esc(t.note)}</span>
+          ${t.legs.length ? `<ul class="legs sub">${t.legs.map((l) => `<li>${esc(l.outcome)}: ${l.filled}/${l.contracts} × ${l.buy} at ${cents(l.avg_price ?? l.price)}${l.error ? ` · <span class="bad">${esc(l.error)}</span>` : ""}</li>`).join("")}</ul>` : ""}
+        </span>
+        <span class="num ${t.filled ? "" : "muted"}">${t.filled ? money(t.cost) : "nothing"}</span>
+      </div>`).join("")
+    : empty(mode === "off" ? "Automatic trading is off. Turn on <b>paper</b> mode in Settings to see what it would do."
+      : "No trades yet. The trader runs after every refresh and only acts on locked-in arbitrage and your picks with an edge.");
 }
 
 function renderStatus() {
   $("#mode").hidden = state.mode !== "demo";
+  const tmode = state.settings.auto_trade || "off";
+  $("#trading-badge").hidden = tmode === "off";
+  $("#trading-badge").textContent = tmode === "live" && state.live_trading_allowed ? "LIVE TRADING ON" : "Paper trading";
+  $("#trading-badge").style.background = tmode === "live" && state.live_trading_allowed ? "var(--bad-bg)" : "";
   const count = `${state.market_count.toLocaleString()} markets${state.truncated ? " (not all of them: raise the page limit to see more)" : ""}`;
   $("#updated").textContent = state.updated_at ? `Updated ${relTime(state.updated_at)} · ${count}` : state.error ? "No market data yet" : "Loading markets…";
   $("#balance").textContent = state.balance != null ? `Balance ${money(state.balance)}` : state.balance_error ? "Balance unavailable" : "";
@@ -236,6 +260,9 @@ function renderSettings() {
   const form = $("#settings-form");
   if (settingsDirty || form.contains(document.activeElement)) return; // don't overwrite unsaved edits
   for (const [k, v] of Object.entries(state.settings)) if (form.elements[k]) form.elements[k].value = v;
+  $("#live-hint").textContent = state.live_trading_allowed
+    ? "ALLOW_LIVE_TRADING=yes is set in .env, so live mode will place real orders."
+    : "Live mode also needs ALLOW_LIVE_TRADING=yes in your .env file; until then it trades on paper.";
 }
 
 // ---------- market dialog ----------
@@ -352,12 +379,20 @@ form.addEventListener("submit", async (e) => {
   const msg = $("#settings-saved");
   // Send only what changed, so settings you never touched keep following .env.
   const changes = {};
-  for (const name of ["bankroll", "min_edge_cents", "refresh_minutes", "large_trade", "fee_rate", "max_event_pages"]) {
+  for (const name of ["bankroll", "min_edge_cents", "refresh_minutes", "large_trade", "fee_rate", "max_event_pages",
+    "trade_fraction", "max_daily_fraction", "max_trades_per_day"]) {
     const v = f[name].valueAsNumber;
     if (!Number.isFinite(v)) { msg.textContent = "Please fill in every number."; return; }
     if (v !== state.settings[name]) changes[name] = v;
   }
   if (f.watch_series.value !== state.settings.watch_series) changes.watch_series = f.watch_series.value;
+  if (f.auto_trade.value !== state.settings.auto_trade) {
+    if (f.auto_trade.value === "live" && !confirm("Live mode places real orders with your money, automatically, without asking each time. Turn it on?")) {
+      f.auto_trade.value = state.settings.auto_trade;
+      return;
+    }
+    changes.auto_trade = f.auto_trade.value;
+  }
   try {
     if (Object.keys(changes).length) await api("/api/settings", changes);
     settingsDirty = false;

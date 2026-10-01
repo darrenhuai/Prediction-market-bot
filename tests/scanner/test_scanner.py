@@ -350,3 +350,120 @@ class TestWebApi:
     def test_does_not_serve_files_outside_web_dir(self, base_url):
         assert self._status(lambda: urllib.request.urlopen(base_url + "/%2e%2e/pyproject.toml")) == 404
         assert self._status(lambda: urllib.request.urlopen(base_url + "/" + "a" * 300)) == 404
+
+
+class TestAutoTrader:
+    """The automatic trader, on demo data (which pretends every order fills)."""
+
+    @pytest.fixture
+    def scanner(self, tmp_path):
+        s = Scanner(DemoSource(), data_dir=tmp_path, mode="demo")
+        s.refresh()
+        assert s.snapshot["balance"] == 1000.0 and s.opportunities()["arbitrage"]
+        return s
+
+    def test_off_by_default_and_trades_nothing(self, scanner):
+        assert scanner.settings["auto_trade"] == "off"
+        assert scanner.trade() == [] and scanner.trader.ledger == []
+
+    def test_paper_mode_sizes_an_arbitrage_set_to_one_percent(self, scanner):
+        scanner.update_settings({"auto_trade": "paper"})
+        written = scanner.trade()
+        arb = scanner.opportunities()["arbitrage"][0]
+        entry = next(e for e in written if e["key"] == arb["key"])
+        sets = entry["legs"][0]["contracts"]
+        assert entry["mode"] == "paper" and entry["filled"]
+        assert sets == int(10.0 * 100 // arb["cost_cents"])  # 1% of $1,000 is $10
+        assert all(leg["buy"] == "NO" and leg["contracts"] == sets for leg in entry["legs"])
+        assert entry["cost"] == pytest.approx(sum(leg["price"] for leg in arb["legs"]) * sets / 100, abs=0.01)
+        assert "locked in" in entry["note"]
+
+    def test_same_opportunity_is_not_traded_twice_in_a_day(self, scanner):
+        scanner.update_settings({"auto_trade": "paper"})
+        first = scanner.trade()
+        assert first and scanner.trade() == []
+        assert len(scanner.trader.ledger) == len(first)
+
+    def test_trades_your_picks_with_an_edge(self, scanner):
+        scanner.set_estimate("DEMO-GDP-Q3-YES", 90)
+        scanner.update_settings({"auto_trade": "paper"})
+        pick = next(e for e in scanner.trade() if e["kind"] == "pick")
+        leg = pick["legs"][0]
+        assert leg["ticker"] == "DEMO-GDP-Q3-YES" and leg["buy"] == "YES" and leg["contracts"] >= 1
+        assert pick["cost"] <= 10.0  # never more than 1% of the balance
+
+    def test_daily_spending_cap_stops_trading(self, scanner):
+        scanner.update_settings({"auto_trade": "paper", "max_daily_fraction": 0.01, "trade_fraction": 0.01})
+        for t in ("DEMO-GDP-Q3-YES", "DEMO-SHUTDOWN-YES", "DEMO-STARSHIP-YES"):
+            scanner.set_estimate(t, 95)
+        written = scanner.trade()
+        assert sum(e["cost"] for e in written if e["filled"]) <= 10.0 + 0.01
+
+    def test_live_without_env_flag_falls_back_to_paper(self, scanner, monkeypatch):
+        monkeypatch.delenv("ALLOW_LIVE_TRADING", raising=False)
+        scanner.update_settings({"auto_trade": "live"})
+        assert all(e["mode"] == "paper" for e in scanner.trade())
+
+    def test_live_with_env_flag_places_orders(self, scanner, monkeypatch):
+        monkeypatch.setenv("ALLOW_LIVE_TRADING", "yes")
+        placed = []
+        real = scanner.source.place_order
+
+        def spy(*args, **kwargs):
+            placed.append(args)
+            return real(*args, **kwargs)
+
+        scanner.source.place_order = spy
+        scanner.update_settings({"auto_trade": "live"})
+        written = scanner.trade()
+        assert placed and all(e["mode"] == "live" for e in written)
+        assert placed[0][4] == "fill_or_kill"  # arbitrage legs are all-or-nothing
+
+    def test_failed_arbitrage_leg_stops_the_set(self, scanner, monkeypatch):
+        monkeypatch.setenv("ALLOW_LIVE_TRADING", "yes")
+        calls = {"n": 0}
+
+        def flaky(ticker, buy, contracts, price, tif="immediate_or_cancel"):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                return {"order_id": "x", "fill_count": "0.00", "remaining_count": "0.00"}
+            return {"order_id": "y", "fill_count": f"{contracts:.2f}", "remaining_count": "0.00",
+                    "average_fill_price": f"{(price if buy == 'YES' else 100 - price) / 100:.4f}"}
+
+        scanner.source.place_order = flaky
+        scanner.update_settings({"auto_trade": "live"})
+        arb = next(e for e in scanner.trade() if e["kind"] == "arbitrage")
+        assert len(arb["legs"]) == 2 and "did not fill" in arb["note"]
+
+    def test_no_balance_means_no_trades(self, scanner):
+        scanner.update_settings({"auto_trade": "paper"})
+        scanner.snapshot["balance"] = None
+        assert scanner.trade() == []
+
+    def test_rejects_bad_trading_settings(self, scanner):
+        for bad in ({"auto_trade": "yes"}, {"trade_fraction": 0.5}, {"max_trades_per_day": 0}):
+            with pytest.raises(ValueError):
+                scanner.update_settings(bad)
+
+    def test_order_request_matches_kalshi_v2_shape(self, monkeypatch):
+        import httpx
+
+        from src.common.kalshi_client import KalshiClient
+
+        captured = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["path"] = request.url.path
+            captured["body"] = json.loads(request.content)
+            return httpx.Response(200, json={"order_id": "o1", "fill_count": "3.00", "remaining_count": "0.00"})
+
+        monkeypatch.delenv("KALSHI_PRIVATE_KEY_PATH", raising=False)
+        c = KalshiClient()
+        c._session = httpx.Client(base_url=c.base, transport=httpx.MockTransport(handler))
+        c._login = lambda: setattr(c, "_token", "t") or setattr(c, "_token_expiry", 9e12)
+        c.place_order("KXTEST-1", "NO", 3, 40, "fill_or_kill")
+        assert captured["path"].endswith("/portfolio/events/orders")
+        body = captured["body"]
+        # Buying NO at 40c is an "ask" at a YES price of 60c on Kalshi's single book.
+        assert body["side"] == "ask" and body["price"] == "0.6000" and body["count"] == "3.00"
+        assert body["time_in_force"] == "fill_or_kill" and body["self_trade_prevention_type"] == "taker_at_cross"

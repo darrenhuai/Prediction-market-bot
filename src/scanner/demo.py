@@ -112,3 +112,10 @@ class DemoSource:
 
     def get_balance(self) -> dict[str, Any]:
         return {"balance": 100_000}  # $1,000.00 of pretend money
+
+    has_auth = True
+
+    def place_order(self, ticker, buy, contracts, price_cents, time_in_force="immediate_or_cancel"):
+        """Pretend every order fills in full at the asked price."""
+        return {"order_id": f"demo-{ticker}-{buy}", "fill_count": f"{contracts:.2f}", "remaining_count": "0.00",
+                "average_fill_price": f"{price_cents / 100:.4f}"}

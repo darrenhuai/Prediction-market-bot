@@ -43,6 +43,7 @@ def refresh_and_alert(scanner: Scanner) -> None:
     try:
         if scanner.refresh() and not scanner.snapshot.get("error"):
             scanner.alerter.send(scanner.all_opportunities())
+            scanner.trade()
     except Exception:
         log.exception("Refresh failed")
 

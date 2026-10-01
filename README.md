@@ -47,6 +47,18 @@ Put these in a file called `.env` in the project folder. All of them are optiona
 
 Anything you change on the app's **Settings** tab overrides the `.env` value, and is saved in `data/settings.json`.
 
+### Automatic trading (off by default)
+
+The Settings tab has an **Automatic trading** section with three modes:
+
+- **Off**: the default. Nothing is ever bought.
+- **Paper**: after every refresh, the app records what it *would* have bought, at real prices, on the **Trades** tab. Nothing is sent to Kalshi. Run this for at least a week first.
+- **Live**: places real orders with your money, without asking each time. It only works if `ALLOW_LIVE_TRADING=yes` is also in your `.env`, so a stray click can't switch it on.
+
+What it buys: locked-in arbitrage sets (NO on every outcome, each leg all-or-nothing) and your picks when the price gives you an edge. How much: the 1% rule, so each trade risks 1% of your current Kalshi balance, with a daily cap (10% of your balance and 20 trades by default) and never the same bet twice in a day. Orders are immediate-or-cancel, so nothing is left resting on the book. If a later leg of an arbitrage set fails to fill, the earlier legs are ordinary NO positions; the Trades tab says so when it happens.
+
+Paper trading proves the code works; it does not prove you'll make money. Only locked-in arbitrage can't lose, and it is rare. Trades on your picks pay off only if your estimates are better than the market's.
+
 ### Running without the UI
 
 `bot.py` does the same scan on a timer. It logs to `output/alerts.log` and can email you (see the email settings above). It uses the same picks and settings as the web app, re-reading them on every scan, so you can run both at once.

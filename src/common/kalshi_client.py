@@ -248,6 +248,50 @@ class KalshiClient:
             params["ticker"] = ticker
         return self._get("/portfolio/fills", params=params, auth=True)
 
+    def _delete(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        headers = self._rsa_auth_headers("DELETE", "/trade-api/v2" + path)
+        resp = self._session.delete(path, params=params, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
+
+    def place_order(
+        self,
+        ticker: str,
+        buy: str,
+        contracts: float,
+        price_cents: float,
+        time_in_force: str = "immediate_or_cancel",
+    ) -> dict[str, Any]:
+        """Buy ``contracts`` of YES or NO at up to ``price_cents`` each (Kalshi's V2 order endpoint).
+
+        Kalshi runs one order book per market quoted in YES prices: buying NO
+        at 40c is placing an "ask" at 60c. ``time_in_force`` defaults to
+        immediate-or-cancel, so nothing is left resting on the book.
+        Returns Kalshi's response: order_id, fill_count, remaining_count,
+        average_fill_price (dollars).
+        """
+        import uuid
+        if buy not in ("YES", "NO"):
+            raise ValueError("buy must be 'YES' or 'NO'")
+        if not 0 < price_cents < 100 or contracts <= 0:
+            raise ValueError("price must be between 0 and 100 cents and contracts positive")
+        yes_price = price_cents if buy == "YES" else 100 - price_cents
+        body = {
+            "ticker": ticker,
+            "client_order_id": str(uuid.uuid4()),
+            "side": "bid" if buy == "YES" else "ask",
+            "count": f"{contracts:.2f}",
+            "price": f"{yes_price / 100:.4f}",
+            "time_in_force": time_in_force,
+            "self_trade_prevention_type": "taker_at_cross",
+            "post_only": False,
+            "exchange_index": -1,  # route by market ticker
+        }
+        return self._post("/portfolio/events/orders", body)
+
+    def cancel_order(self, order_id: str, ticker: str) -> dict[str, Any]:
+        return self._delete(f"/portfolio/events/orders/{order_id}", params={"market_ticker": ticker})
+
     def create_order(
         self,
         ticker: str,

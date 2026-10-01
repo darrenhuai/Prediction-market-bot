@@ -12,6 +12,7 @@
     <div class="brand">
       <h1>Prediction Market Bot</h1>
       <span id="mode" class="badge" hidden>Demo data</span>
+      <span id="trading-badge" class="badge" hidden></span>
     </div>
     <div class="status">
       <span id="balance" class="muted"></span>
@@ -24,6 +25,7 @@
     <button role="tab" data-tab="opps" aria-selected="true">Opportunities <span id="count-opps" class="count"></span></button>
     <button role="tab" data-tab="markets">Markets <span id="count-markets" class="count"></span></button>
     <button role="tab" data-tab="picks">My picks <span id="count-picks" class="count"></span></button>
+    <button role="tab" data-tab="trades">Trades <span id="count-trades" class="count"></span></button>
     <button role="tab" data-tab="settings">Settings</button>
   </nav>
 
@@ -70,6 +72,11 @@
       <div id="picks-list" class="rows"></div>
     </section>
 
+    <section id="tab-trades" class="tab" hidden>
+      <p class="lead">Every trade the automatic trader made or would have made, newest first. <b>Paper</b> trades are pretend: nothing was sent to Kalshi.</p>
+      <div id="trades-list" class="rows"></div>
+    </section>
+
     <section id="tab-settings" class="tab" hidden>
       <form id="settings-form" class="settings">
         <label>Bankroll ($)
@@ -99,13 +106,34 @@
           <input name="fee_rate" type="number" min="0" max="0.5" step="any" required>
           <small>Kalshi's standard fee rate is 0.07, which works out to at most 1.75¢ per contract. Enter it as a decimal: 0.07, not 7.</small>
         </label>
+        <h2>Automatic trading</h2>
+        <p class="notice warn">Live mode places <b>real orders with your money</b> on Kalshi without asking. Run on <b>paper</b> for at least a week first and read the Trades tab. Even then, only "locked in" arbitrage can't lose; trades on your picks win only if your estimates are right.</p>
+        <label>Mode
+          <select name="auto_trade">
+            <option value="off">Off: never trade</option>
+            <option value="paper">Paper: record what it would do, send nothing</option>
+            <option value="live">Live: place real orders</option>
+          </select>
+          <small id="live-hint"></small>
+        </label>
+        <label>Money per trade (share of your balance)
+          <input name="trade_fraction" type="number" min="0.001" max="0.05" step="any" required>
+          <small>0.01 is the 1% rule: each trade risks 1% of your current Kalshi balance.</small>
+        </label>
+        <label>Daily spending cap (share of your balance)
+          <input name="max_daily_fraction" type="number" min="0.01" max="0.5" step="any" required>
+          <small>Trading stops for the day once this much has been spent. 0.1 = 10%.</small>
+        </label>
+        <label>Most trades per day
+          <input name="max_trades_per_day" type="number" min="1" max="200" step="1" required>
+        </label>
         <p class="hint">Settings you save here take priority over the same settings in your .env file.</p>
         <div class="actions"><button class="btn" type="submit">Save settings</button><span id="settings-saved" class="muted"></span></div>
       </form>
     </section>
   </main>
 
-  <footer class="muted">For research only. This app never places trades. Prices can move fast, and big orders may not fill at the listed price.</footer>
+  <footer class="muted">For research only. The app only places orders if you turn on live trading in Settings. Prices can move fast, and big orders may not fill at the listed price.</footer>
 
   <dialog id="market-dialog">
     <form method="dialog" class="dialog-close"><button class="icon-btn" aria-label="Close">✕</button></form>
